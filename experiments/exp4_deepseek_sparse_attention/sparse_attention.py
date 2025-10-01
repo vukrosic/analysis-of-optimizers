@@ -78,19 +78,20 @@ class LightningIndexer(nn.Module):
         # Compute dot products: q_{t,j} · k_s for all t, s, j
         # queries: [batch, seq_len_q, heads, dim]
         # keys: [batch, seq_len_k, dim]
-        # Result: [batch, seq_len_q, seq_len_k, heads]
+        # Result: [batch, seq_len_q, heads, seq_len_k]
         dots = torch.einsum('bthd,bsd->bths', queries, keys)
         
         # Apply ReLU activation (for throughput efficiency as per paper)
-        activated = F.relu(dots)
+        activated = F.relu(dots)  # [batch, seq_len_q, heads, seq_len_k]
         
         # Weight each head: w_{t,j} · ReLU(q_{t,j} · k_s)
-        # weights: [batch, seq_len_q, heads] -> [batch, seq_len_q, 1, heads]
-        # activated: [batch, seq_len_q, seq_len_k, heads]
-        weighted = activated * weights.unsqueeze(2)
+        # weights: [batch, seq_len_q, heads] -> [batch, seq_len_q, heads, 1]
+        # activated: [batch, seq_len_q, heads, seq_len_k]
+        weighted = activated * weights.unsqueeze(-1)
         
         # Sum across heads: Σ_j w_{t,j} · ReLU(q_{t,j} · k_s)
-        index_scores = weighted.sum(dim=-1)  # [batch, seq_len, seq_len]
+        # weighted: [batch, seq_len_q, heads, seq_len_k]
+        index_scores = weighted.sum(dim=2)  # [batch, seq_len_q, seq_len_k]
         
         return index_scores
 

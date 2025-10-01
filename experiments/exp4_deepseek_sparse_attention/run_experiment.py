@@ -23,27 +23,14 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, root_dir)
 
-# Import from parent package first
+# Import from parent package
 from data.dataset import TextTokenDataset
 from data.loader import load_and_cache_data
-from optimizers.muon import Muon
 from configs.moe_config import MoEModelConfig
 
 # Import local modules (from current directory)
-import importlib.util
-exp_dir = os.path.dirname(__file__)
-spec_models = importlib.util.spec_from_file_location("exp4_models", os.path.join(exp_dir, "models.py"))
-exp4_models = importlib.util.module_from_spec(spec_models)
-spec_models.loader.exec_module(exp4_models)
-create_sparse_model = exp4_models.create_sparse_model
-create_classic_model = exp4_models.create_classic_model
-count_parameters = exp4_models.count_parameters
-
-spec_sparse_attn = importlib.util.spec_from_file_location("exp4_sparse_attention", os.path.join(exp_dir, "sparse_attention.py"))
-exp4_sparse_attn = importlib.util.module_from_spec(spec_sparse_attn)
-spec_sparse_attn.loader.exec_module(exp4_sparse_attn)
-SparseAttentionMetrics = exp4_sparse_attn.SparseAttentionMetrics
-TopKTokenSelector = exp4_sparse_attn.TopKTokenSelector
+from exp4_models import create_sparse_model, create_classic_model, count_parameters
+from sparse_attention import SparseAttentionMetrics, TopKTokenSelector
 
 # Experiment configuration
 CONFIG = {
@@ -131,7 +118,7 @@ def train_classic_model():
     print(f"   Parameters: {count_parameters(model):,}")
     
     # Create optimizer
-    optimizer = Muon(model.parameters(), lr=CONFIG['learning_rate'])
+    optimizer = torch.optim.Adam(model.parameters(), lr=CONFIG['learning_rate'])
     
     # Training loop
     print(f"\n🚀 Training for {CONFIG['classic_steps']} steps...")
@@ -252,7 +239,7 @@ def train_sparse_model():
     
     # Optimizer for indexer only
     indexer_params = model.get_indexer_parameters()
-    warmup_optimizer = Muon(indexer_params, lr=CONFIG['warmup_lr'])
+    warmup_optimizer = torch.optim.Adam(indexer_params, lr=CONFIG['warmup_lr'])
     
     warmup_results = {
         'indexer_loss': [],
