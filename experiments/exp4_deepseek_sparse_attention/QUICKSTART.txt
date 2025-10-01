@@ -1,0 +1,88 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║             EXPERIMENT 4: DeepSeek Sparse vs Classic Attention            ║
+║                     Sequence Length Comparison                            ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+🚀 QUICKSTART
+-------------
+  cd experiments/exp4_deepseek_sparse_attention
+  python run_experiment.py
+
+
+📊 VIEW RESULTS
+---------------
+  Main plot:     results/sequence_length_comparison.png
+  Summary:       results/summary.json
+  Details:       results/RESULTS_SUMMARY.md
+
+
+🎯 WHAT'S TESTED
+----------------
+  • DeepSeek Sparse Attention (from paper) vs Classic Dense Attention
+  • Sequence lengths: 64, 128, 256 tokens
+  • Same architecture, fair comparison
+  • 1000 training steps per model
+
+
+✅ KEY FINDING
+--------------
+  Sparse Attention WINS across all sequence lengths:
+    - 48-71% better validation loss
+    - 5-11x better accuracy  
+    - Similar training speed (~0.06-0.07s per step)
+
+
+📁 FILES (MINIMAL & CLEAN)
+---------------------------
+  run_experiment.py         Main experiment script
+  exp4_models.py            Model definitions (sparse + classic)
+  sparse_attention.py       DeepSeek sparse attention implementation
+  config.py                 Configuration helpers
+  README.md                 Full documentation
+  EXPERIMENT_OVERVIEW.md    Quick reference
+
+
+🔧 CUSTOMIZE
+------------
+  Edit run_experiment.py:
+    - SEQUENCE_LENGTHS = [64, 128, 256]   # Which lengths to test
+    - BASE_CONFIG['steps'] = 1000          # Training steps
+    - BASE_CONFIG['d_model'] = 256         # Model size
+
+
+💡 HOW IT WORKS
+---------------
+  Classic Attention:
+    • Standard multi-head attention
+    • O(L²) complexity (quadratic scaling)
+    • Attends to all tokens
+  
+  DeepSeek Sparse Attention:
+    • Lightning indexer selects relevant tokens
+    • O(Lk) complexity where k < L
+    • Only attends to top-k tokens (50% in this experiment)
+    • Much better performance with similar speed!
+
+
+📈 RESULTS SUMMARY
+------------------
+  Best Results (Seq Length = 256):
+    Classic:  Loss=7.05  Acc=7.9%   Time=0.063s/step
+    Sparse:   Loss=2.49  Acc=61.0%  Time=0.067s/step ✅ WINNER
+  
+  Improvement: 71% better loss, 8x better accuracy!
+
+
+📚 BASED ON
+-----------
+  DeepSeek-V3 Paper (DeepSeek_V3_2.pdf in repo root)
+  Lightning Indexer + Top-k Selection + Sparse Attention
+
+
+🔍 FOR MORE INFO
+----------------
+  • README.md - Full documentation
+  • EXPERIMENT_OVERVIEW.md - Quick reference
+  • results/RESULTS_SUMMARY.md - Detailed results analysis
+  • DeepSeek_V3_2.pdf - Original paper
+

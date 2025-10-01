@@ -241,12 +241,13 @@ class DeepSeekSparseAttention(nn.Module):
             
             # Apply sparse attention using the mask
             # Create attention mask: -inf for non-selected tokens
+            # Need to unsqueeze for broadcasting with heads dimension
             attn_mask = torch.zeros(
-                batch_size, seq_len, seq_len,
+                batch_size, 1, seq_len, seq_len,
                 device=x.device,
                 dtype=Q.dtype
             )
-            attn_mask = attn_mask.masked_fill(~top_k_mask, float('-inf'))
+            attn_mask = attn_mask.masked_fill(~top_k_mask.unsqueeze(1), float('-inf'))
             
             # Apply attention with sparse mask
             attn_output = F.scaled_dot_product_attention(

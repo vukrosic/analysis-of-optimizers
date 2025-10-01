@@ -193,6 +193,8 @@ def run_for_sequence_length(seq_len):
     
     # Train Classic Attention
     print(f"\n🔵 Training Classic Attention (Dense)...")
+    torch.manual_seed(42)  # Set seed for fair comparison
+    torch.cuda.manual_seed(42)
     classic_model = create_classic_model(config).to(config['device'])
     print(f"   Parameters: {count_parameters(classic_model):,}")
     classic_results = train_model(classic_model, train_loader, val_loader, 
@@ -203,6 +205,8 @@ def run_for_sequence_length(seq_len):
     
     # Train Sparse Attention
     print(f"\n🟠 Training Sparse Attention (DeepSeek DSA)...")
+    torch.manual_seed(42)  # Same seed for fair comparison
+    torch.cuda.manual_seed(42)
     sparse_model = create_sparse_model(config).to(config['device'])
     print(f"   Parameters: {count_parameters(sparse_model):,}")
     print(f"   Sparse top-k: {config['sparse_top_k']} / {seq_len} tokens")
