@@ -43,7 +43,6 @@ spec_sparse_attn = importlib.util.spec_from_file_location("exp4_sparse_attention
 exp4_sparse_attn = importlib.util.module_from_spec(spec_sparse_attn)
 spec_sparse_attn.loader.exec_module(exp4_sparse_attn)
 SparseAttentionMetrics = exp4_sparse_attn.SparseAttentionMetrics
-TopKTokenSelector = exp4_sparse_attn.TopKTokenSelector
 
 # Experiment configuration
 CONFIG = {
@@ -85,29 +84,6 @@ CONFIG = {
 }
 
 
-def load_data():
-    """Load and prepare dataset"""
-    # Create a config object for data loading
-    data_config = MoEModelConfig(
-        max_seq_len=CONFIG['max_seq_len'],
-        max_tokens=CONFIG['max_tokens'],
-        num_documents=CONFIG['num_documents']
-    )
-    texts, tokenizer, tokens = load_and_cache_data(data_config)
-    CONFIG['vocab_size'] = data_config.vocab_size
-    
-    # Create dataset and split
-    full_dataset = TextTokenDataset(tokens, CONFIG['max_seq_len'])
-    val_size = len(full_dataset) // 10
-    train_size = len(full_dataset) - val_size
-    train_dataset, val_dataset = torch.utils.data.random_split(
-        full_dataset, [train_size, val_size], generator=torch.Generator().manual_seed(42)
-    )
-    
-    print(f"✅ Data loaded: {len(train_dataset)} train, {len(val_dataset)} val samples")
-    return train_dataset, val_dataset
-
-
 def train_classic_model():
     """Train classic attention model (baseline)"""
     print("\n" + "="*80)
@@ -120,9 +96,21 @@ def train_classic_model():
     
     # Load dataset
     print("📚 Loading dataset...")
-    train_dataset, val_dataset = load_data()
+    dataset = TextTokenDataset(
+        split='train',
+        max_seq_len=CONFIG['max_seq_len'],
+        max_tokens=CONFIG['max_tokens'],
+        num_documents=CONFIG['num_documents']
+    )
+    CONFIG['vocab_size'] = get_vocab_size()
     
-    train_loader = DataLoader(train_dataset, batch_size=CONFIG['batch_size'], shuffle=True)
+    val_dataset = TextTokenDataset(
+        split='validation',
+        max_seq_len=CONFIG['max_seq_len'],
+        max_tokens=10000
+    )
+    
+    train_loader = DataLoader(dataset, batch_size=CONFIG['batch_size'], shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=CONFIG['batch_size'], shuffle=False)
     
     # Create model
@@ -155,10 +143,9 @@ def train_classic_model():
                 
             step_start = time.time()
             
-            # Forward pass (batch is tuple (x, y))
-            input_ids, targets = batch
-            input_ids = input_ids.to(CONFIG['device'])
-            targets = targets.to(CONFIG['device'])
+            # Forward pass
+            input_ids = batch['input_ids'].to(CONFIG['device'])
+            targets = batch['targets'].to(CONFIG['device'])
             
             logits, aux_loss = model(input_ids)
             
@@ -231,9 +218,21 @@ def train_sparse_model():
     
     # Load dataset
     print("📚 Loading dataset...")
-    train_dataset, val_dataset = load_data()
+    dataset = TextTokenDataset(
+        split='train',
+        max_seq_len=CONFIG['max_seq_len'],
+        max_tokens=CONFIG['max_tokens'],
+        num_documents=CONFIG['num_documents']
+    )
+    CONFIG['vocab_size'] = get_vocab_size()
     
-    train_loader = DataLoader(train_dataset, batch_size=CONFIG['batch_size'], shuffle=True)
+    val_dataset = TextTokenDataset(
+        split='validation',
+        max_seq_len=CONFIG['max_seq_len'],
+        max_tokens=10000
+    )
+    
+    train_loader = DataLoader(dataset, batch_size=CONFIG['batch_size'], shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=CONFIG['batch_size'], shuffle=False)
     
     # Create model
@@ -267,8 +266,13 @@ def train_sparse_model():
             if step >= CONFIG['warmup_steps']:
                 break
             
-            input_ids, _ = batch
-            input_ids = input_ids.to(CONFIG['device'])
+            input_ids = batch['input_ids'].to(CONFIG['device'])
+            
+            # Get index scores and attention weights
+            with torch.no_grad():
+                # Need to get attention weights - we'll use a simplified approach
+                # In full implementation, you'd extract attention weights from forward pass
+                pass
             
             logits, _, index_scores_list = model(input_ids, return_index_scores=True)
             
@@ -331,10 +335,9 @@ def train_sparse_model():
             
             step_start = time.time()
             
-            # Forward pass (batch is tuple (x, y))
-            input_ids, targets = batch
-            input_ids = input_ids.to(CONFIG['device'])
-            targets = targets.to(CONFIG['device'])
+            # Forward pass
+            input_ids = batch['input_ids'].to(CONFIG['device'])
+            targets = batch['targets'].to(CONFIG['device'])
             
             logits, aux_loss, index_scores_list = model(input_ids, return_index_scores=True)
             
@@ -364,6 +367,7 @@ def train_sparse_model():
                 with torch.no_grad():
                     _, _, idx_scores = model(input_ids[:1], return_index_scores=True)
                     if idx_scores:
+                        from sparse_attention import TopKTokenSelector
                         selector = TopKTokenSelector(top_k=CONFIG['sparse_top_k'])
                         mask, _ = selector(idx_scores[0])
                         sparsity = SparseAttentionMetrics.compute_sparsity(mask)
@@ -417,9 +421,8 @@ def evaluate(model, val_loader, config):
     
     with torch.no_grad():
         for batch in val_loader:
-            input_ids, targets = batch
-            input_ids = input_ids.to(config['device'])
-            targets = targets.to(config['device'])
+            input_ids = batch['input_ids'].to(config['device'])
+            targets = batch['targets'].to(config['device'])
             
             if hasattr(model, 'enable_sparse_attention'):
                 logits, _ , _ = model(input_ids, return_index_scores=False)
@@ -668,4 +671,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

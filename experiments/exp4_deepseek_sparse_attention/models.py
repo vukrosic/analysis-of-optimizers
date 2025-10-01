@@ -15,11 +15,27 @@ import sys
 import os
 
 # Add parent directories to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, root_dir)
 
-from models.components import MixtureOfExperts
-from models.layers import MultiHeadAttention, Rotary
-from sparse_attention import DeepSeekSparseAttention
+# Import from parent models package
+import importlib.util
+spec_components = importlib.util.spec_from_file_location("components", os.path.join(root_dir, "models", "components.py"))
+components_module = importlib.util.module_from_spec(spec_components)
+spec_components.loader.exec_module(components_module)
+MixtureOfExperts = components_module.MixtureOfExperts
+
+spec_layers = importlib.util.spec_from_file_location("layers", os.path.join(root_dir, "models", "layers.py"))
+layers_module = importlib.util.module_from_spec(spec_layers)
+spec_layers.loader.exec_module(layers_module)
+MultiHeadAttention = layers_module.MultiHeadAttention
+
+# Import local sparse_attention module
+exp_dir = os.path.dirname(__file__)
+spec_sparse = importlib.util.spec_from_file_location("sparse_attention_local", os.path.join(exp_dir, "sparse_attention.py"))
+sparse_module = importlib.util.module_from_spec(spec_sparse)
+spec_sparse.loader.exec_module(sparse_module)
+DeepSeekSparseAttention = sparse_module.DeepSeekSparseAttention
 
 
 class SparseTransformerBlock(nn.Module):
