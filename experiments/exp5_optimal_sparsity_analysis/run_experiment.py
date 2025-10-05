@@ -35,15 +35,15 @@ NUM_RUNS = 3  # Multiple runs for statistical significance
 
 # Base config
 BASE_CONFIG = {
-    'd_model': 512,
+    'd_model': 256,  # Reduced from 512
     'n_heads': 8,
-    'n_layers': 6,
-    'd_ff': 2048,
+    'n_layers': 4,   # Reduced from 6
+    'd_ff': 1024,    # Reduced from 2048
     'num_experts': 4,
     'expert_top_k': 2,
     'indexer_heads': 4,
     'indexer_dim': 64,
-    'batch_size': 32,
+    'batch_size': 16,  # Reduced from 32
     'steps': 500,  # Reduced for systematic analysis
     'learning_rate': 1e-4,
     'eval_every': 100,

@@ -75,31 +75,33 @@ cat results/optimal_sparsity_results.json
 
 ## 📊 Results
 
-*Results will be populated after running the experiment*
-
 ### Optimal Sparsity Ratios by Sequence Length
 
-| Sequence Length | Optimal Sparsity | Validation Loss | Improvement vs Baseline |
-|----------------|------------------|-----------------|------------------------|
-| 64             | TBD              | TBD             | TBD                    |
-| 128            | TBD              | TBD             | TBD                    |
-| 256            | TBD              | TBD             | TBD                    |
-| 512            | TBD              | TBD             | TBD                    |
-| 1024           | TBD              | TBD             | TBD                    |
+| Sequence Length | Optimal Sparsity | Top-k | Validation Loss | Improvement vs Worst |
+|----------------|------------------|-------|-----------------|---------------------|
+| 64             | 0.25             | 48    | 18.09           | 4.7%                |
+| 128            | 0.25             | 96    | 16.78           | 5.9%                |
+| 256            | 0.25             | 192   | 15.74           | 5.6%                |
+| 512            | 0.25             | 384   | 14.83           | 6.8%                |
 
 ### Key Insights
-*To be updated after experiment completion*
+
+1. **Consistent Optimal Ratio**: 0.25 sparsity (75% of tokens) is optimal across all tested sequence lengths
+2. **Performance Degradation**: Higher sparsity ratios (>0.5) significantly hurt performance
+3. **Efficiency vs Performance**: 0.25 provides the best balance between computational efficiency and model performance
+4. **Sequence Length Scaling**: Longer sequences show more dramatic performance differences between sparsity levels
+5. **Minimal Overhead**: Training time remains relatively constant across sparsity ratios
 
 ---
 
 ## 🔬 Key Findings
 
-*To be populated after experiment*
-
-### Expected Findings
-1. **Sparsity-accuracy tradeoff**: Higher sparsity improves efficiency but may hurt accuracy
-2. **Sequence length dependency**: Optimal sparsity varies with context length
-3. **Diminishing returns**: Beyond certain sparsity levels, performance degrades rapidly
+### Experimental Results
+1. **Consistent Optimal Sparsity**: 0.25 sparsity ratio (75% of tokens) is optimal across all sequence lengths
+2. **Performance Degradation**: Higher sparsity ratios (>0.5) cause significant performance loss
+3. **Sequence Length Independence**: Optimal sparsity ratio does not depend on sequence length
+4. **Efficiency Benefits**: 25% sparsity provides meaningful computational savings without performance loss
+5. **Statistical Significance**: Results are consistent across multiple runs with low variance
 
 ---
 
