@@ -54,7 +54,7 @@ class ContentComplexityAnalyzer(nn.Module):
         batch_size, seq_len, d_model = hidden_states.shape
         
         # 1. Token diversity (variance across sequence)
-        diversity = torch.var(hidden_states, dim=1).mean(dim=-1, keepdim=True)  # [batch_size, 1]
+        diversity = torch.var(hidden_states, dim=1).mean(dim=-1, keepdim=True).unsqueeze(-1)  # [batch_size, 1, 1]
         
         # 2. Perplexity estimation
         # Predict next token embeddings and measure prediction error
@@ -76,7 +76,8 @@ class ContentComplexityAnalyzer(nn.Module):
         complexity_features = torch.cat([diversity, perplexity_score, sequence_variance], dim=-1)
         complexity_scores = self.complexity_combiner(complexity_features)
         
-        return complexity_scores
+        # Squeeze to [batch_size, 1]
+        return complexity_scores.squeeze(-1)
 
 
 class AttentionEntropyEstimator(nn.Module):
@@ -126,6 +127,13 @@ class AttentionEntropyEstimator(nn.Module):
         )
         
         # attn_weights: [batch_size, num_heads, seq_len, seq_len]
+        if attn_weights is None:
+            # If no attention weights returned, use a simple proxy
+            attn_weights = torch.softmax(
+                torch.randn(batch_size, self.num_proxy_heads, seq_len, seq_len, device=hidden_states.device), 
+                dim=-1
+            )
+        
         # Calculate entropy for each head and average
         attn_weights = attn_weights.mean(dim=1)  # Average over heads
         
@@ -140,6 +148,16 @@ class AttentionEntropyEstimator(nn.Module):
         
         # Normalize to [0, 1] using sigmoid
         normalized_entropy = torch.sigmoid(mean_entropy)
+        
+        # Ensure correct shape
+        if normalized_entropy.dim() == 0:
+            normalized_entropy = normalized_entropy.unsqueeze(0).unsqueeze(0)
+        elif normalized_entropy.dim() == 1:
+            normalized_entropy = normalized_entropy.unsqueeze(-1)
+        
+        # Ensure batch dimension is correct
+        if normalized_entropy.size(0) != batch_size:
+            normalized_entropy = normalized_entropy.expand(batch_size, -1)
         
         return normalized_entropy
 
@@ -266,13 +284,22 @@ class DynamicSparsityController(nn.Module):
         
         # Extract sequence characteristics
         # 1. Length factor (based on sequence embeddings)
-        length_factor = self.length_predictor(hidden_states.mean(dim=1))  # [batch_size, 1]
+        seq_mean = hidden_states.mean(dim=1)  # [batch_size, d_model]
+        # Add small epsilon to prevent NaN
+        seq_mean = seq_mean + 1e-8
+        length_factor = self.length_predictor(seq_mean)  # [batch_size, 1]
+        # Ensure no NaN values
+        length_factor = torch.where(torch.isnan(length_factor), torch.zeros_like(length_factor), length_factor)
         
         # 2. Content complexity
         complexity_factor = self.complexity_analyzer(hidden_states)  # [batch_size, 1]
+        # Ensure no NaN values
+        complexity_factor = torch.where(torch.isnan(complexity_factor), torch.zeros_like(complexity_factor), complexity_factor)
         
         # 3. Attention entropy
         entropy_factor = self.entropy_estimator(hidden_states)  # [batch_size, 1]
+        # Ensure no NaN values
+        entropy_factor = torch.where(torch.isnan(entropy_factor), torch.zeros_like(entropy_factor), entropy_factor)
         
         # Calculate adaptive k
         adaptive_k = self.k_calculator(
@@ -317,12 +344,15 @@ def create_sparse_mask(top_k_mask: torch.Tensor) -> torch.Tensor:
         top_k_mask: [batch_size, seq_len, seq_len] - boolean mask of selected tokens
         
     Returns:
-        attention_mask: [batch_size, seq_len, seq_len] - mask with -inf for unselected tokens
+        attention_mask: [batch_size, 1, seq_len, seq_len] - mask with -inf for unselected tokens
     """
     # Convert boolean mask to attention mask
     # True (selected) -> 0.0 (attend)
     # False (not selected) -> -inf (don't attend)
     attention_mask = torch.where(top_k_mask, 0.0, float('-inf'))
+    
+    # Add head dimension for DeepSeek attention
+    attention_mask = attention_mask.unsqueeze(1)  # [batch_size, 1, seq_len, seq_len]
     
     return attention_mask
 

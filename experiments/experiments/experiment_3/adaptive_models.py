@@ -16,12 +16,13 @@ import sys
 import os
 sys.path.append('/root/deepseek-sparse-attention-research')
 
-from models.layers import MoELayer
+from models.components import MixtureOfExperts
 from adaptive_sparsity import (
     DynamicSparsityController, 
     TopKTokenSelector, 
     create_sparse_mask
 )
+from simple_config import SimpleDeepSeekConfig
 
 
 class LightningIndexer(nn.Module):
@@ -42,8 +43,8 @@ class LightningIndexer(nn.Module):
         self.q_indexer = nn.Linear(d_model, indexer_heads * indexer_dim)
         self.k_indexer = nn.Linear(d_model, indexer_heads * indexer_dim)
         
-        # Indexer weights (w_t,j^I from the paper)
-        self.indexer_weights = nn.Parameter(torch.randn(indexer_heads) * 0.1)
+        # Indexer weights (w_t,j^I from the paper) - ensure positive weights
+        self.indexer_weights = nn.Parameter(torch.abs(torch.randn(indexer_heads) * 0.1))
         
         # Initialize weights
         nn.init.xavier_uniform_(self.q_indexer.weight)
@@ -85,6 +86,9 @@ class LightningIndexer(nn.Module):
         weighted_scores = dot_products * self.indexer_weights.view(1, -1, 1, 1)
         index_scores = weighted_scores.sum(dim=1)  # [batch_size, seq_len, seq_len]
         
+        # Ensure non-negative scores
+        index_scores = F.relu(index_scores)
+        
         return index_scores
 
 
@@ -103,20 +107,37 @@ class AdaptiveDeepSeekSparseAttention(nn.Module):
         super().__init__()
         self.config = config
         self.layer_idx = layer_idx
-        self.d_model = config.d_model
+        
+        # Handle both dict and object configs
+        if isinstance(config, dict):
+            self.d_model = config['d_model']
+        else:
+            self.d_model = config.d_model
         
         # Import DeepSeek attention from existing codebase
         from deepseek_modeling import DeepseekV3Attention
-        self.deepseek_attention = DeepseekV3Attention(config, layer_idx)
+        
+        # Convert dict config to SimpleDeepSeekConfig if needed
+        if isinstance(config, dict):
+            deepseek_config = SimpleDeepSeekConfig(config)
+        else:
+            deepseek_config = config
+            
+        self.deepseek_attention = DeepseekV3Attention(deepseek_config, layer_idx)
         
         # Lightning Indexer
         self.indexer = LightningIndexer(
-            config.d_model, indexer_heads, indexer_dim
+            self.d_model, indexer_heads, indexer_dim
         )
         
         # Dynamic Sparsity Controller
+        if isinstance(config, dict):
+            max_position_embeddings = config['max_position_embeddings']
+        else:
+            max_position_embeddings = config.max_position_embeddings
+            
         self.sparsity_controller = DynamicSparsityController(
-            config.d_model, config.max_position_embeddings
+            self.d_model, max_position_embeddings
         )
         
         # Top-k Token Selector
@@ -181,7 +202,7 @@ class AdaptiveDeepSeekSparseAttention(nn.Module):
         # Track adaptive statistics
         with torch.no_grad():
             sparsity_ratio = 1.0 - (adaptive_k.float() / seq_len)
-            self.adaptive_k_history.append(adaptive_k.mean().item())
+            self.adaptive_k_history.append(adaptive_k.float().mean().item())
             self.sparsity_ratios_history.append(sparsity_ratio.mean().item())
             
             # Keep only recent history to avoid memory issues
@@ -222,30 +243,40 @@ class AdaptiveMoELLM(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.d_model = config.d_model
-        self.n_layers = config.n_layers
-        self.n_heads = config.n_heads
-        self.d_ff = config.d_ff
-        self.vocab_size = config.vocab_size
-        self.max_seq_len = config.max_position_embeddings
+        
+        # Handle both dict and object configs
+        if isinstance(config, dict):
+            self.d_model = config['d_model']
+            self.n_layers = config['n_layers']
+            self.n_heads = config['n_heads']
+            self.d_ff = config['d_ff']
+            self.vocab_size = config['vocab_size']
+            self.max_seq_len = config['max_position_embeddings']
+        else:
+            self.d_model = config.d_model
+            self.n_layers = config.n_layers
+            self.n_heads = config.n_heads
+            self.d_ff = config.d_ff
+            self.vocab_size = config.vocab_size
+            self.max_seq_len = config.max_position_embeddings
         
         # Token embedding
-        self.token_embedding = nn.Embedding(config.vocab_size, config.d_model)
+        self.token_embedding = nn.Embedding(self.vocab_size, self.d_model)
         
         # Positional embedding
-        self.position_embedding = nn.Embedding(config.max_position_embeddings, config.d_model)
+        self.position_embedding = nn.Embedding(self.max_seq_len, self.d_model)
         
         # Transformer layers with adaptive sparsity
         self.layers = nn.ModuleList([
             AdaptiveTransformerLayer(config, layer_idx)
-            for layer_idx in range(config.n_layers)
+            for layer_idx in range(self.n_layers)
         ])
         
         # Layer normalization
-        self.layer_norm = nn.LayerNorm(config.d_model)
+        self.layer_norm = nn.LayerNorm(self.d_model)
         
         # Output projection
-        self.output_projection = nn.Linear(config.d_model, config.vocab_size)
+        self.output_projection = nn.Linear(self.d_model, self.vocab_size)
         
         # Initialize weights
         self.apply(self._init_weights)
@@ -373,23 +404,37 @@ class AdaptiveTransformerLayer(nn.Module):
         self.config = config
         self.layer_idx = layer_idx
         
+        # Handle both dict and object configs
+        if isinstance(config, dict):
+            d_model = config['d_model']
+            d_ff = config['d_ff']
+            num_experts = config['num_experts']
+            top_k = config['top_k']
+            dropout = config['dropout']
+        else:
+            d_model = config.d_model
+            d_ff = config.d_ff
+            num_experts = config.num_experts
+            top_k = config.top_k
+            dropout = config.dropout
+        
         # Adaptive sparse attention
         self.attention = AdaptiveDeepSeekSparseAttention(
             config, layer_idx, indexer_heads=4, indexer_dim=64
         )
         
         # MoE layer
-        self.moe = MoELayer(
-            d_model=config.d_model,
-            d_ff=config.d_ff,
-            num_experts=config.num_experts,
-            top_k=config.top_k,
-            dropout=config.dropout
+        self.moe = MixtureOfExperts(
+            d_model=d_model,
+            d_ff=d_ff,
+            num_experts=num_experts,
+            top_k=top_k,
+            dropout=dropout
         )
         
         # Layer norms
-        self.attention_norm = nn.LayerNorm(config.d_model)
-        self.moe_norm = nn.LayerNorm(config.d_model)
+        self.attention_norm = nn.LayerNorm(d_model)
+        self.moe_norm = nn.LayerNorm(d_model)
         
     def forward(self, hidden_states: torch.Tensor,
                 attention_mask: Optional[torch.Tensor] = None,
@@ -425,7 +470,7 @@ class AdaptiveTransformerLayer(nn.Module):
         hidden_states = hidden_states + attn_output
         
         # MoE with residual connection
-        moe_output = self.moe(self.moe_norm(hidden_states))
+        moe_output, _ = self.moe(self.moe_norm(hidden_states))  # Ignore aux_loss
         hidden_states = hidden_states + moe_output
         
         outputs = (hidden_states,)
@@ -456,27 +501,41 @@ class FixedSparseMoELLM(nn.Module):
     def __init__(self, config, sparsity_ratio: float = 0.5):
         super().__init__()
         self.config = config
-        self.d_model = config.d_model
-        self.n_layers = config.n_layers
         self.sparsity_ratio = sparsity_ratio
         
+        # Handle both dict and object configs
+        if isinstance(config, dict):
+            self.d_model = config['d_model']
+            self.n_layers = config['n_layers']
+            self.n_heads = config['n_heads']
+            self.d_ff = config['d_ff']
+            self.vocab_size = config['vocab_size']
+            self.max_seq_len = config['max_position_embeddings']
+        else:
+            self.d_model = config.d_model
+            self.n_layers = config.n_layers
+            self.n_heads = config.n_heads
+            self.d_ff = config.d_ff
+            self.vocab_size = config.vocab_size
+            self.max_seq_len = config.max_position_embeddings
+        
         # Token embedding
-        self.token_embedding = nn.Embedding(config.vocab_size, config.d_model)
+        self.token_embedding = nn.Embedding(self.vocab_size, self.d_model)
         
         # Positional embedding
-        self.position_embedding = nn.Embedding(config.max_position_embeddings, config.d_model)
+        self.position_embedding = nn.Embedding(self.max_seq_len, self.d_model)
         
         # Transformer layers with fixed sparse attention
         self.layers = nn.ModuleList([
             FixedSparseTransformerLayer(config, layer_idx, sparsity_ratio)
-            for layer_idx in range(config.n_layers)
+            for layer_idx in range(self.n_layers)
         ])
         
         # Layer normalization
-        self.layer_norm = nn.LayerNorm(config.d_model)
+        self.layer_norm = nn.LayerNorm(self.d_model)
         
         # Output projection
-        self.output_projection = nn.Linear(config.d_model, config.vocab_size)
+        self.output_projection = nn.Linear(self.d_model, self.vocab_size)
         
         # Initialize weights
         self.apply(self._init_weights)
@@ -575,28 +634,49 @@ class FixedSparseTransformerLayer(nn.Module):
         self.layer_idx = layer_idx
         self.sparsity_ratio = sparsity_ratio
         
+        # Handle both dict and object configs
+        if isinstance(config, dict):
+            d_model = config['d_model']
+            d_ff = config['d_ff']
+            num_experts = config['num_experts']
+            top_k = config['top_k']
+            dropout = config['dropout']
+        else:
+            d_model = config.d_model
+            d_ff = config.d_ff
+            num_experts = config.num_experts
+            top_k = config.top_k
+            dropout = config.dropout
+        
         # Lightning Indexer
-        self.indexer = LightningIndexer(config.d_model, indexer_heads=4, indexer_dim=64)
+        self.indexer = LightningIndexer(d_model, indexer_heads=4, indexer_dim=64)
         
         # DeepSeek attention
         from deepseek_modeling import DeepseekV3Attention
-        self.attention = DeepseekV3Attention(config, layer_idx)
+        
+        # Convert dict config to SimpleDeepSeekConfig if needed
+        if isinstance(config, dict):
+            deepseek_config = SimpleDeepSeekConfig(config)
+        else:
+            deepseek_config = config
+            
+        self.attention = DeepseekV3Attention(deepseek_config, layer_idx)
         
         # Top-k selector
         self.selector = TopKTokenSelector()
         
         # MoE layer
-        self.moe = MoELayer(
-            d_model=config.d_model,
-            d_ff=config.d_ff,
-            num_experts=config.num_experts,
-            top_k=config.top_k,
-            dropout=config.dropout
+        self.moe = MixtureOfExperts(
+            d_model=d_model,
+            d_ff=d_ff,
+            num_experts=num_experts,
+            top_k=top_k,
+            dropout=dropout
         )
         
         # Layer norms
-        self.attention_norm = nn.LayerNorm(config.d_model)
-        self.moe_norm = nn.LayerNorm(config.d_model)
+        self.attention_norm = nn.LayerNorm(d_model)
+        self.moe_norm = nn.LayerNorm(d_model)
         
     def forward(self, hidden_states: torch.Tensor,
                 attention_mask: Optional[torch.Tensor] = None,
@@ -645,7 +725,7 @@ class FixedSparseTransformerLayer(nn.Module):
         hidden_states = hidden_states + attn_output
         
         # MoE
-        moe_output = self.moe(self.moe_norm(hidden_states))
+        moe_output, _ = self.moe(self.moe_norm(hidden_states))  # Ignore aux_loss
         hidden_states = hidden_states + moe_output
         
         outputs = (hidden_states,)

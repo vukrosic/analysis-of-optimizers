@@ -14,19 +14,26 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from typing import Dict, List, Tuple, Optional
 import warnings
 warnings.filterwarnings('ignore')
+
+# Optional imports for visualization
+try:
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    HAS_VISUALIZATION = True
+except ImportError:
+    HAS_VISUALIZATION = False
+    print("Warning: matplotlib/seaborn not available. Visualization will be skipped.")
 
 # Add project root to path
 sys.path.append('/root/deepseek-sparse-attention-research')
 
 # Import our modules
 from adaptive_models import AdaptiveMoELLM, FixedSparseMoELLM
-from data.loader import TinyStoriesDataset
-from training.trainer import Trainer
+from simple_dataset import TinyStoriesDataset
+# from training.trainer import Trainer  # Not used in this experiment
 from utils.helpers import set_seed, count_parameters
 
 
@@ -371,9 +378,17 @@ def create_visualizations(all_results: Dict, analysis: Dict, config: ExperimentC
     print("CREATING VISUALIZATIONS")
     print(f"{'='*60}")
     
+    if not HAS_VISUALIZATION:
+        print("Skipping visualizations - matplotlib/seaborn not available")
+        return
+    
     # Set up plotting style
-    plt.style.use('seaborn-v0_8')
-    sns.set_palette("husl")
+    try:
+        plt.style.use('seaborn-v0_8')
+        sns.set_palette("husl")
+    except:
+        # Fallback if seaborn style not available
+        plt.style.use('default')
     
     # Create figure with subplots
     fig, axes = plt.subplots(2, 3, figsize=(18, 12))
