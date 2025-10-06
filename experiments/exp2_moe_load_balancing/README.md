@@ -1,0 +1,1 @@
+My idea is to test DeepSeek's auxiliary loss free vs the current default loss for load balancing.
