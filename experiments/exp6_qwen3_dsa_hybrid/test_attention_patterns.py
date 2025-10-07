@@ -10,11 +10,55 @@ Compare:
 import torch
 import sys
 import os
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, root_dir)
 
 from experiments.exp6_qwen3_dsa_hybrid.test_qwen3_baseline import *
 import json
+
+
+def train_epoch_with_history(model, dataloader, optimizer, device, max_steps, total_steps):
+    """Train for one epoch and track loss history per step"""
+    model.train()
+    total_loss = 0
+    total_tokens = 0
+    loss_history = []
+    
+    for i, batch in enumerate(dataloader):
+        if total_steps >= max_steps:
+            break
+        
+        if isinstance(batch, (list, tuple)):
+            input_ids = batch[0].to(device)
+        else:
+            input_ids = batch.to(device)
+        labels = input_ids.clone()
+        
+        outputs = model(input_ids=input_ids, labels=labels)
+        loss = outputs.loss
+        
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        optimizer.step()
+        optimizer.zero_grad()
+        
+        total_loss += loss.item() * input_ids.numel()
+        total_tokens += input_ids.numel()
+        total_steps += 1
+        
+        step_loss = total_loss / total_tokens
+        loss_history.append({'step': total_steps, 'loss': step_loss})
+        
+        if total_steps % 50 == 0:
+            print(f"  Step {total_steps}/{max_steps}, Loss: {step_loss:.4f}")
+    
+    avg_loss = total_loss / total_tokens if total_tokens > 0 else 0
+    return avg_loss, total_steps, loss_history
+
 
 PATTERNS = {
     "sandwich": ["linear_attention", "full_attention", "full_attention", "linear_attention"],
@@ -96,12 +140,12 @@ def test_pattern(pattern_name, layer_types):
     # Optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4, betas=(0.9, 0.95), weight_decay=0.1)
     
-    # Train for 300 steps (10x more)
-    max_steps = 300
+    # Train for 10 steps
+    max_steps = 10
     start_time = time.time()
     total_steps = 0
     
-    train_loss, total_steps = train_epoch(model, train_loader, optimizer, device, max_steps, total_steps)
+    train_loss, total_steps, loss_history = train_epoch_with_history(model, train_loader, optimizer, device, max_steps, total_steps)
     val_metrics = evaluate(model, val_loader, device, max_batches=100)
     
     training_time = time.time() - start_time
@@ -115,6 +159,7 @@ def test_pattern(pattern_name, layer_types):
         'val_loss': val_metrics['loss'],
         'val_accuracy': val_metrics['accuracy'],
         'val_perplexity': val_metrics['perplexity'],
+        'loss_history': loss_history,
     }
     
     print(f"\n{pattern_name.upper()} Results:")
@@ -133,7 +178,7 @@ def test_pattern(pattern_name, layer_types):
 
 def main():
     print("Testing Different Attention Patterns")
-    print(f"Configuration: 4 experts, top-2 routing, 300 training steps\n")
+    print(f"Configuration: 4 experts, top-2 routing, 10 training steps\n")
     
     results = {}
     for pattern_name, layer_types in PATTERNS.items():
@@ -166,6 +211,42 @@ def main():
         json.dump(results, f, indent=2)
     
     print(f"\nResults saved to: {results_dir / 'attention_patterns_comparison.json'}")
+    
+    # Create loss comparison plot
+    print(f"\n{'='*60}")
+    print("Creating loss comparison plot...")
+    print(f"{'='*60}\n")
+    
+    plt.figure(figsize=(12, 7))
+    
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+    markers = ['o', 's', '^', 'D']
+    
+    for idx, (pattern_name, result) in enumerate(results.items()):
+        if 'loss_history' in result and result['loss_history']:
+            steps = [h['step'] for h in result['loss_history']]
+            losses = [h['loss'] for h in result['loss_history']]
+            
+            color = colors[idx % len(colors)]
+            marker = markers[idx % len(markers)]
+            
+            plt.plot(steps, losses, label=pattern_name, color=color, 
+                    linestyle='-', linewidth=2, marker=marker, markersize=6)
+    
+    plt.xlabel('Training Step', fontsize=12, fontweight='bold')
+    plt.ylabel('Training Loss', fontsize=12, fontweight='bold')
+    plt.title('Training Loss Comparison - Different Attention Patterns', fontsize=14, fontweight='bold')
+    plt.legend(loc='best', fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
+    plot_path = results_dir / 'attention_patterns_loss_comparison.png'
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    print(f"Loss comparison plot saved to: {plot_path}")
+    
+    print(f"\n{'='*60}")
+    print(f"All results saved to: {results_dir}")
+    print(f"{'='*60}\n")
 
 
 if __name__ == "__main__":

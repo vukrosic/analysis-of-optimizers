@@ -12,6 +12,9 @@ import os
 import time
 import json
 from pathlib import Path
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, root_dir)
@@ -26,8 +29,50 @@ from torch.utils.data import DataLoader
 
 # Import training functions from baseline test
 from experiments.exp6_qwen3_dsa_hybrid.test_qwen3_baseline import (
-    count_parameters, train_epoch, evaluate
+    count_parameters, evaluate
 )
+
+
+def train_epoch_with_history(model, dataloader, optimizer, device, max_steps, total_steps):
+    """Train for one epoch and track loss history per step"""
+    model.train()
+    total_loss = 0
+    total_tokens = 0
+    loss_history = []
+    
+    for i, batch in enumerate(dataloader):
+        # Stop if we've reached max_steps across all epochs
+        if total_steps >= max_steps:
+            break
+        
+        # Handle tuple output from dataset (x, y)
+        if isinstance(batch, (list, tuple)):
+            input_ids = batch[0].to(device)
+        else:
+            input_ids = batch.to(device)
+        labels = input_ids.clone()
+        
+        outputs = model(input_ids=input_ids, labels=labels)
+        loss = outputs.loss
+        
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        optimizer.step()
+        optimizer.zero_grad()
+        
+        total_loss += loss.item() * input_ids.numel()
+        total_tokens += input_ids.numel()
+        total_steps += 1
+        
+        # Record loss at this step
+        step_loss = total_loss / total_tokens
+        loss_history.append({'step': total_steps, 'loss': step_loss})
+        
+        if total_steps % 50 == 0:  # Log every 50 steps for longer training
+            print(f"  Step {total_steps}/{max_steps}, Loss: {step_loss:.4f}")
+    
+    avg_loss = total_loss / total_tokens if total_tokens > 0 else 0
+    return avg_loss, total_steps, loss_history
 
 
 # 8 Attention Patterns to test
@@ -148,12 +193,12 @@ def test_pattern(pattern_name, layer_types, use_dsa=False):
     # Optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4, betas=(0.9, 0.95), weight_decay=0.1)
     
-    # Train for 300 steps
-    max_steps = 300
+    # Train for 10 steps
+    max_steps = 10
     start_time = time.time()
     total_steps = 0
     
-    train_loss, total_steps = train_epoch(model, train_loader, optimizer, device, max_steps, total_steps)
+    train_loss, total_steps, loss_history = train_epoch_with_history(model, train_loader, optimizer, device, max_steps, total_steps)
     val_metrics = evaluate(model, val_loader, device, max_batches=100)
     
     training_time = time.time() - start_time
@@ -168,6 +213,7 @@ def test_pattern(pattern_name, layer_types, use_dsa=False):
         'val_loss': val_metrics['loss'],
         'val_accuracy': val_metrics['accuracy'],
         'val_perplexity': val_metrics['perplexity'],
+        'loss_history': loss_history,
     }
     
     print(f"\n{pattern_name.upper()} Results:")
@@ -194,7 +240,7 @@ def main():
     print("\nConfiguration:")
     print("  • 4 layers, 128 hidden dim, 14M parameters")
     print("  • 4 experts, top-2 routing, MoE every 2 layers")
-    print("  • 300 training steps")
+    print("  • 10 training steps")
     print()
     
     results = {}
@@ -277,8 +323,100 @@ def main():
     with open(results_dir / 'comprehensive_comparison.json', 'w') as f:
         json.dump(results, f, indent=2)
     
+    # Create loss comparison plot
+    print(f"\n{'='*70}")
+    print("Creating loss comparison plot...")
+    print(f"{'='*70}\n")
+    
+    plt.figure(figsize=(14, 8))
+    
+    # Define colors for different patterns
+    original_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']  # Blue tones
+    dsa_colors = ['#9467bd', '#8c564b', '#e377c2', '#7f7f7f']  # Purple/pink tones
+    
+    color_idx_orig = 0
+    color_idx_dsa = 0
+    
+    for pattern_name, result in results.items():
+        if 'loss_history' in result and result['loss_history']:
+            steps = [h['step'] for h in result['loss_history']]
+            losses = [h['loss'] for h in result['loss_history']]
+            
+            # Choose color based on pattern type
+            if result['uses_dsa']:
+                color = dsa_colors[color_idx_dsa % len(dsa_colors)]
+                linestyle = '--'
+                color_idx_dsa += 1
+            else:
+                color = original_colors[color_idx_orig % len(original_colors)]
+                linestyle = '-'
+                color_idx_orig += 1
+            
+            label = f"{pattern_name} ({'DSA' if result['uses_dsa'] else 'Orig'})"
+            plt.plot(steps, losses, label=label, color=color, linestyle=linestyle, linewidth=2, marker='o', markersize=4)
+    
+    plt.xlabel('Training Step', fontsize=12, fontweight='bold')
+    plt.ylabel('Training Loss', fontsize=12, fontweight='bold')
+    plt.title('Training Loss Comparison - All 8 Attention Patterns', fontsize=14, fontweight='bold')
+    plt.legend(loc='best', fontsize=9, ncol=2)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
+    # Save plot
+    plot_path = results_dir / 'loss_comparison.png'
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    print(f"Loss comparison plot saved to: {plot_path}")
+    
+    # Also create a separate plot comparing Original vs DSA averages
+    plt.figure(figsize=(14, 8))
+    
+    # Calculate average loss curves for each category
+    original_losses = {}
+    dsa_losses = {}
+    
+    for pattern_name, result in results.items():
+        if 'loss_history' in result and result['loss_history']:
+            for h in result['loss_history']:
+                step = h['step']
+                loss = h['loss']
+                
+                if result['uses_dsa']:
+                    if step not in dsa_losses:
+                        dsa_losses[step] = []
+                    dsa_losses[step].append(loss)
+                else:
+                    if step not in original_losses:
+                        original_losses[step] = []
+                    original_losses[step].append(loss)
+    
+    # Plot averages
+    if original_losses:
+        steps = sorted(original_losses.keys())
+        avg_losses = [sum(original_losses[s]) / len(original_losses[s]) for s in steps]
+        plt.plot(steps, avg_losses, label='Original (Full + Linear Attention)', 
+                color='#1f77b4', linestyle='-', linewidth=3, marker='o', markersize=6)
+    
+    if dsa_losses:
+        steps = sorted(dsa_losses.keys())
+        avg_losses = [sum(dsa_losses[s]) / len(dsa_losses[s]) for s in steps]
+        plt.plot(steps, avg_losses, label='DSA (DeepSeek Sparse + Linear Attention)', 
+                color='#9467bd', linestyle='--', linewidth=3, marker='s', markersize=6)
+    
+    plt.xlabel('Training Step', fontsize=12, fontweight='bold')
+    plt.ylabel('Average Training Loss', fontsize=12, fontweight='bold')
+    plt.title('Average Training Loss: Original vs DSA', fontsize=14, fontweight='bold')
+    plt.legend(loc='best', fontsize=11)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
+    # Save plot
+    plot_path_avg = results_dir / 'loss_comparison_average.png'
+    plt.savefig(plot_path_avg, dpi=300, bbox_inches='tight')
+    print(f"Average loss comparison plot saved to: {plot_path_avg}")
+    
     print(f"\n{'='*70}")
     print(f"Results saved to: {results_dir / 'comprehensive_comparison.json'}")
+    print(f"Plots saved to: {results_dir}")
     print(f"{'='*70}\n")
 
 
