@@ -11,17 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import TYPE_CHECKING
 
-from ...utils import _LazyModule
-from ...utils.import_utils import define_import_structure
+from .configuration_qwen3_next import Qwen3NextConfig
+from .modular_qwen3_next import (
+    Qwen3NextForCausalLM,
+    Qwen3NextModel,
+    Qwen3NextPreTrainedModel,
+)
 
-
-if TYPE_CHECKING:
-    from .configuration_qwen3_next import *
-    from .modeling_qwen3_next import *
-else:
-    import sys
-
-    _file = globals()["__file__"]
-    sys.modules[__name__] = _LazyModule(__name__, _file, define_import_structure(_file), module_spec=__spec__)
+__all__ = [
+    "Qwen3NextConfig",
+    "Qwen3NextModel",
+    "Qwen3NextForCausalLM",
+    "Qwen3NextPreTrainedModel",
+]
