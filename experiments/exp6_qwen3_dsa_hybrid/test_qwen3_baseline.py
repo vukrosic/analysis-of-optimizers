@@ -57,7 +57,7 @@ def train_epoch(model, dataloader, optimizer, device, max_steps, total_steps):
         total_tokens += input_ids.numel()
         total_steps += 1
         
-        if total_steps % 10 == 0:
+        if total_steps % 50 == 0:  # Log every 50 steps for longer training
             avg_loss = total_loss / total_tokens
             print(f"  Step {total_steps}/{max_steps}, Loss: {avg_loss:.4f}")
     

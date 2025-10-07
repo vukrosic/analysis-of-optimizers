@@ -808,8 +808,16 @@ class Qwen3NextModel(Qwen3NextPreTrainedModel):
 
 class Qwen3NextForCausalLM(MixtralForCausalLM):
     def __init__(self, config):
-        super().__init__(config)
+        # Don't call super().__init__() - it creates MixtralModel instead of Qwen3NextModel
+        PreTrainedModel.__init__(self, config)
+        self.model = Qwen3NextModel(config)  # Use our custom model with layer_types support
+        self.vocab_size = config.vocab_size
+        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.router_aux_loss_coef = config.router_aux_loss_coef
         self.num_experts = config.num_experts
+        self.num_experts_per_tok = config.num_experts_per_tok
+        # Initialize weights and apply final processing
+        self.post_init()
 
     def forward(
         self,

@@ -96,13 +96,13 @@ def test_pattern(pattern_name, layer_types):
     # Optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4, betas=(0.9, 0.95), weight_decay=0.1)
     
-    # Train
-    max_steps = 30
+    # Train for 300 steps (10x more)
+    max_steps = 300
     start_time = time.time()
     total_steps = 0
     
     train_loss, total_steps = train_epoch(model, train_loader, optimizer, device, max_steps, total_steps)
-    val_metrics = evaluate(model, val_loader, device, max_batches=50)
+    val_metrics = evaluate(model, val_loader, device, max_batches=100)
     
     training_time = time.time() - start_time
     
@@ -133,7 +133,7 @@ def test_pattern(pattern_name, layer_types):
 
 def main():
     print("Testing Different Attention Patterns")
-    print(f"Configuration: 4 experts, top-2 routing, 30 training steps\n")
+    print(f"Configuration: 4 experts, top-2 routing, 300 training steps\n")
     
     results = {}
     for pattern_name, layer_types in PATTERNS.items():
