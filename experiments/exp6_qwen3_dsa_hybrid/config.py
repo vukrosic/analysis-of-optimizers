@@ -93,16 +93,16 @@ SMALL_CONFIG = ExperimentConfig(
     batch_size=4,
 )
 
-# Medium config for full experiment
+# Medium config for full experiment (reduced for testing)
 MEDIUM_CONFIG = ExperimentConfig(
-    hidden_size=512,
-    num_hidden_layers=6,
-    num_attention_heads=8,
-    num_key_value_heads=4,
-    intermediate_size=2048,
-    max_seq_len=512,
-    max_steps=5000,
-    batch_size=8,
+    hidden_size=256,  # Reduced from 512
+    num_hidden_layers=4,  # Reduced from 6
+    num_attention_heads=4,  # Reduced from 8
+    num_key_value_heads=2,  # Reduced from 4
+    intermediate_size=1024,  # Reduced from 2048
+    max_seq_len=256,  # Reduced from 512
+    max_steps=30,  # Testing with 30 steps
+    batch_size=4,  # Reduced from 8
 )
 
 # Large config (if you have resources)

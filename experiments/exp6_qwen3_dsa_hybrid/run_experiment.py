@@ -45,7 +45,11 @@ def train_epoch(model, dataloader, optimizer, device, config, epoch, total_steps
         if total_steps >= config.max_steps:
             break
         
-        input_ids = batch.to(device)
+        # Handle tuple output from dataset (x, y)
+        if isinstance(batch, (list, tuple)):
+            input_ids = batch[0].to(device)
+        else:
+            input_ids = batch.to(device)
         labels = input_ids.clone()
         
         outputs = model(input_ids=input_ids, labels=labels)
@@ -80,7 +84,11 @@ def evaluate(model, dataloader, device):
     correct = 0
     
     for batch in dataloader:
-        input_ids = batch.to(device)
+        # Handle tuple output from dataset (x, y)
+        if isinstance(batch, (list, tuple)):
+            input_ids = batch[0].to(device)
+        else:
+            input_ids = batch.to(device)
         labels = input_ids.clone()
         
         outputs = model(input_ids=input_ids, labels=labels)

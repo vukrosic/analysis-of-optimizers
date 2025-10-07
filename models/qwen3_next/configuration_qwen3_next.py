@@ -268,6 +268,12 @@ class Qwen3NextConfig(PretrainedConfig):
         self.output_router_logits = output_router_logits
         self.router_aux_loss_coef = router_aux_loss_coef
         self.mlp_only_layers = mlp_only_layers
+        
+        # Mixtral compatibility attributes
+        self.sliding_window = kwargs.get('sliding_window', None)
+        self.num_local_experts = kwargs.get('num_local_experts', num_experts)
+        self.router_jitter_noise = kwargs.get('router_jitter_noise', 0.0)
+        self.hidden_dropout_prob = kwargs.get('hidden_dropout_prob', 0.0)
 
 
 __all__ = ["Qwen3NextConfig"]

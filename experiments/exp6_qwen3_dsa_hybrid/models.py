@@ -422,6 +422,7 @@ def create_model(variant: str, config):
         linear_conv_kernel_dim=config.linear_conv_kernel_dim,
         num_experts=config.num_experts,
         num_local_experts=config.num_experts,  # Add for Mixtral compatibility
+        router_jitter_noise=0.0,  # Add for Mixtral compatibility
         decoder_sparse_step=config.decoder_sparse_step,
         mlp_only_layers=config.mlp_only_layers,
         # DSA specific
