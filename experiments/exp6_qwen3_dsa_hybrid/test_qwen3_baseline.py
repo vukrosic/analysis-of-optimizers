@@ -66,14 +66,16 @@ def train_epoch(model, dataloader, optimizer, device, max_steps, total_steps):
 
 
 @torch.no_grad()
-def evaluate(model, dataloader, device):
+def evaluate(model, dataloader, device, max_batches=100):
     """Evaluate model"""
     model.eval()
     total_loss = 0
     total_tokens = 0
     correct = 0
     
-    for batch in dataloader:
+    for i, batch in enumerate(dataloader):
+        if i >= max_batches:
+            break
         # Handle tuple output from dataset (x, y)
         if isinstance(batch, (list, tuple)):
             input_ids = batch[0].to(device)
@@ -219,6 +221,7 @@ def main():
         print(f"\nEpoch {epoch + 1}/{num_epochs} (Steps: {total_steps}/{max_steps})")
         
         train_loss, total_steps = train_epoch(model, train_loader, optimizer, device, max_steps, total_steps)
+        print("Evaluating...")
         val_metrics = evaluate(model, val_loader, device)
         
         print(f"Train Loss: {train_loss:.4f}")
@@ -228,9 +231,9 @@ def main():
     
     training_time = time.time() - start_time
     
-    # Final evaluation
+    # Final evaluation (quick eval with subset)
     print("\nFinal evaluation...")
-    final_metrics = evaluate(model, val_loader, device)
+    final_metrics = evaluate(model, val_loader, device, max_batches=50)
     
     print(f"\n{'='*60}")
     print("TRAINING COMPLETE")
