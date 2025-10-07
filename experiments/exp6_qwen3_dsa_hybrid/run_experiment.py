@@ -32,14 +32,16 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def train_epoch(model, dataloader, optimizer, device, config):
+def train_epoch(model, dataloader, optimizer, device, config, epoch, total_steps):
     """Train for one epoch"""
     model.train()
     total_loss = 0
     total_tokens = 0
+    steps_this_epoch = 0
     
     for i, batch in enumerate(dataloader):
-        if i >= config.max_steps // len(dataloader):
+        # Stop if we've reached max_steps across all epochs
+        if total_steps >= config.max_steps:
             break
         
         input_ids = batch.to(device)
@@ -57,12 +59,15 @@ def train_epoch(model, dataloader, optimizer, device, config):
         
         total_loss += loss.item() * input_ids.numel()
         total_tokens += input_ids.numel()
+        steps_this_epoch += 1
+        total_steps += 1
         
-        if (i + 1) % config.log_interval == 0:
+        if total_steps % config.log_interval == 0:
             avg_loss = total_loss / total_tokens
-            print(f"  Step {i+1}/{len(dataloader)}, Loss: {avg_loss:.4f}")
+            print(f"  Step {total_steps}/{config.max_steps}, Loss: {avg_loss:.4f}")
     
-    return total_loss / total_tokens
+    avg_loss = total_loss / total_tokens if total_tokens > 0 else 0
+    return avg_loss, total_steps
 
 
 @torch.no_grad()
@@ -136,12 +141,19 @@ def train_variant(variant_name, config, train_loader, val_loader, device):
         'training_history': [],
     }
     
+    # Calculate maximum epochs needed (in case dataset is smaller than expected)
     num_epochs = (config.max_steps + len(train_loader) - 1) // len(train_loader)
+    print(f"Dataset: {len(train_loader)} batches per epoch")
+    print(f"Will train for up to {num_epochs} epoch(s) to reach {config.max_steps} steps")
     
+    total_steps = 0
     for epoch in range(num_epochs):
-        print(f"\nEpoch {epoch + 1}/{num_epochs}")
+        if total_steps >= config.max_steps:
+            break
+            
+        print(f"\nEpoch {epoch + 1}/{num_epochs} (Steps: {total_steps}/{config.max_steps})")
         
-        train_loss = train_epoch(model, train_loader, optimizer, device, config)
+        train_loss, total_steps = train_epoch(model, train_loader, optimizer, device, config, epoch, total_steps)
         val_metrics = evaluate(model, val_loader, device)
         
         print(f"Train Loss: {train_loss:.4f}")
@@ -151,6 +163,7 @@ def train_variant(variant_name, config, train_loader, val_loader, device):
         
         results['training_history'].append({
             'epoch': epoch + 1,
+            'total_steps': total_steps,
             'train_loss': train_loss,
             'val_loss': val_metrics['loss'],
             'val_accuracy': val_metrics['accuracy'],
@@ -159,6 +172,8 @@ def train_variant(variant_name, config, train_loader, val_loader, device):
         
         if val_metrics['loss'] < best_val_loss:
             best_val_loss = val_metrics['loss']
+    
+    results['total_steps_trained'] = total_steps
     
     training_time = time.time() - start_time
     

@@ -55,7 +55,8 @@ class ExperimentConfig:
     max_grad_norm: float = 1.0
     
     # Data
-    max_tokens: int = 500_000
+    num_documents: int = 1000  # Number of documents to load
+    max_tokens: int = 2_000_000  # Ensure enough tokens for training without repetition
     vocab_size: int = 50257  # Will be set from tokenizer
     
     # Logging
