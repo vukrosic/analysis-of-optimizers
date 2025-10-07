@@ -352,14 +352,28 @@ def main():
                 linestyle = '-'
                 color_idx_orig += 1
             
-            label = f"{pattern_name} ({'DSA' if result['uses_dsa'] else 'Orig'})"
+            # Create readable pattern string
+            layer_types = result['layer_types']
+            pattern_str = ' → '.join([
+                'L' if 'linear' in lt else ('D' if 'dsa' in lt else 'F')
+                for lt in layer_types
+            ])
+            
+            label = f"{pattern_name}: {pattern_str}"
             plt.plot(steps, losses, label=label, color=color, linestyle=linestyle, linewidth=2, marker='o', markersize=4)
     
     plt.xlabel('Training Step', fontsize=12, fontweight='bold')
     plt.ylabel('Training Loss', fontsize=12, fontweight='bold')
     plt.title('Training Loss Comparison - All 8 Attention Patterns', fontsize=14, fontweight='bold')
-    plt.legend(loc='best', fontsize=9, ncol=2)
+    plt.legend(loc='best', fontsize=8, ncol=2)
     plt.grid(True, alpha=0.3)
+    
+    # Add legend explanation
+    textstr = 'Pattern Key:\nF = Full Attention\nL = Linear Attention\nD = DeepSeek Sparse Attention'
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.8)
+    plt.text(0.02, 0.98, textstr, transform=plt.gca().transAxes, fontsize=9,
+            verticalalignment='top', bbox=props)
+    
     plt.tight_layout()
     
     # Save plot

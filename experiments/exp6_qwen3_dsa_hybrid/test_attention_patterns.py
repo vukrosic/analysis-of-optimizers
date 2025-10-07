@@ -230,7 +230,15 @@ def main():
             color = colors[idx % len(colors)]
             marker = markers[idx % len(markers)]
             
-            plt.plot(steps, losses, label=pattern_name, color=color, 
+            # Create readable pattern string
+            layer_types = result['layer_types']
+            pattern_str = ' → '.join([
+                'L' if 'linear' in lt else 'F'
+                for lt in layer_types
+            ])
+            
+            label = f"{pattern_name}: {pattern_str}"
+            plt.plot(steps, losses, label=label, color=color, 
                     linestyle='-', linewidth=2, marker=marker, markersize=6)
     
     plt.xlabel('Training Step', fontsize=12, fontweight='bold')
@@ -238,6 +246,13 @@ def main():
     plt.title('Training Loss Comparison - Different Attention Patterns', fontsize=14, fontweight='bold')
     plt.legend(loc='best', fontsize=10)
     plt.grid(True, alpha=0.3)
+    
+    # Add legend explanation
+    textstr = 'Pattern Key:\nF = Full Attention\nL = Linear Attention'
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.8)
+    plt.text(0.02, 0.98, textstr, transform=plt.gca().transAxes, fontsize=9,
+            verticalalignment='top', bbox=props)
+    
     plt.tight_layout()
     
     plot_path = results_dir / 'attention_patterns_loss_comparison.png'
