@@ -12,7 +12,7 @@ import sys
 import os
 
 # Add root to path
-root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, root_dir)
 
 # Import Qwen3-Next components
@@ -421,6 +421,7 @@ def create_model(variant: str, config):
         linear_value_head_dim=config.linear_value_head_dim,
         linear_conv_kernel_dim=config.linear_conv_kernel_dim,
         num_experts=config.num_experts,
+        num_local_experts=config.num_experts,  # Add for Mixtral compatibility
         decoder_sparse_step=config.decoder_sparse_step,
         mlp_only_layers=config.mlp_only_layers,
         # DSA specific

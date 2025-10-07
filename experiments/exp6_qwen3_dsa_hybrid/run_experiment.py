@@ -16,12 +16,13 @@ import os
 from pathlib import Path
 import sys
 
-# Add paths
-root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+# Add paths - must be done before any local imports
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, root_dir)
 
-from config import MEDIUM_CONFIG
-from models import create_model
+# Now we can import from the experiment directory
+from experiments.exp6_qwen3_dsa_hybrid.config import MEDIUM_CONFIG
+from experiments.exp6_qwen3_dsa_hybrid.models import create_model
 from data.loader import load_and_cache_data
 from data.dataset import TextTokenDataset
 from utils.helpers import set_seed
