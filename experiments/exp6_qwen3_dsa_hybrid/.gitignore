@@ -9,6 +9,5 @@ __pycache__/
 dist/
 build/
 results/*.json
-results/*.png
 !results/.gitkeep
 
