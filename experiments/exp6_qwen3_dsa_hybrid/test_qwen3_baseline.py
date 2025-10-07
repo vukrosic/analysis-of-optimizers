@@ -134,8 +134,9 @@ def main():
         rms_norm_eps=1e-6,
         head_dim=32,  # hidden_size // num_attention_heads = 128 // 4 = 32
         partial_rotary_factor=1.0,  # Use full rotary embeddings (not partial)
-        # Layer types: alternate between full_attention and linear_attention
-        layer_types=["full_attention", "full_attention", "linear_attention", "full_attention"],
+        # Layer types: Try different patterns
+        # Pattern: linear, full, full, linear (sandwich pattern)
+        layer_types=["linear_attention", "full_attention", "full_attention", "linear_attention"],
         # Linear attention config
         linear_num_value_heads=2,
         linear_num_key_heads=2,
@@ -143,9 +144,9 @@ def main():
         linear_value_head_dim=64,
         linear_conv_kernel_dim=4,
         # MoE configuration
-        num_experts=2,  # Reduced from 4
-        num_local_experts=2,  # Same as num_experts
-        num_experts_per_tok=1,  # Route to top 1 expert (reduced from 2)
+        num_experts=4,  # 4 experts
+        num_local_experts=4,  # Same as num_experts
+        num_experts_per_tok=2,  # Route to top 2 experts
         router_jitter_noise=0.0,
         decoder_sparse_step=2,  # Use MoE every 2 layers
         moe_intermediate_size=256,  # Reduced from 512
