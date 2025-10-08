@@ -1,3 +1,6 @@
+I will maybe make a course folder here as well.
+
+---
 
 Review and understand DeepGEMM PR #200: https://github.com/deepseek-ai/DeepGEMM/pull/200
 Review and understand FlashMLA PR #98: https://github.com/deepseek-ai/FlashMLA/pull/98
