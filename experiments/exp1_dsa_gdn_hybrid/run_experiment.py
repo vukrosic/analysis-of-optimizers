@@ -19,7 +19,7 @@ matplotlib.use('Agg')  # Use non-interactive backend
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, root_dir)
 
-from experiments.exp6_qwen3_dsa_hybrid.models import EnhancedQwen3NextForCausalLM
+from experiments.exp1_dsa_gdn_hybrid.models import EnhancedQwen3NextForCausalLM
 from models.qwen3_next.configuration_qwen3_next import Qwen3NextConfig
 from models.qwen3_next.modular_qwen3_next import Qwen3NextForCausalLM
 from data.loader import load_and_cache_data
@@ -243,8 +243,8 @@ def test_pattern(pattern_name, layer_types, use_dsa=False):
     # Optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4, betas=(0.9, 0.95), weight_decay=0.1)
     
-    # Train for 300 steps
-    max_steps = 300
+    # Train for 1000 steps
+    max_steps = 1000
     start_time = time.time()
     total_steps = 0
     
@@ -292,7 +292,7 @@ def main():
     print("\nConfiguration:")
     print("  • 4 layers, 128 hidden dim, 14M parameters")
     print("  • 4 experts, top-2 routing, MoE every 2 layers")
-    print("  • 300 training steps")
+    print("  • 1000 training steps")
     print()
     
     results = {}

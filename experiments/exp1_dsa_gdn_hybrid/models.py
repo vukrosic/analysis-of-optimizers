@@ -31,7 +31,7 @@ from models.qwen3_next.modular_qwen3_next import (
 from models.qwen3_next.configuration_qwen3_next import Qwen3NextConfig
 
 # Import DeepSeek Sparse Attention
-from experiments.exp1_attention_mechanisms.exp1_sparse_vs_classic_attention.sparse_attention import (
+from experiments.exp2_attention_mechanisms.exp1_sparse_vs_classic_attention.sparse_attention import (
     DeepSeekSparseAttention,
     LightningIndexer,
 )
