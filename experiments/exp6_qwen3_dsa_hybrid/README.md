@@ -4,18 +4,13 @@
 
 1. Can replacing full attention with DeepSeek Sparse Attention (DSA) improve the efficiency and performance of a hybrid attention architecture that combines full attention and Gated DeltaNet (GDN)?
 
+- Yes.
+
 2. Which combination of attention mechanisms across layers produces the best efficiency-performance tradeoff: (1) Full Attention + GDN, (2) DSA + GDN, (3) DSA only, or (4) Full Attention only?
-
-## Hypothesis
-
-We hypothesize that:
-1. **DSA-Only variant** will achieve better computational efficiency than the baseline by reducing quadratic complexity across all attention layers, but may sacrifice some model quality by replacing the specialized GDN mechanism.
-2. **Hybrid variant** will provide the best balance, applying DSA to full attention layers (where sparsity is most beneficial) while preserving GDN's linear complexity and specialized design for linear attention layers.
-3. The hybrid approach will demonstrate that different attention mechanisms (full attention, DSA, and GDN) can be strategically combined within a single architecture to optimize for both efficiency and performance.
 
 ## Experiment Design
 
-Compare 8 attention layer patterns across a 4-layer architecture:
+Compare 8 attention layer patterns across a 4-layer LLM architecture:
 
 ### Original Patterns (Full Attention + Linear Attention)
 1. **Sandwich**: L → F → F → L
@@ -34,11 +29,10 @@ Compare 8 attention layer patterns across a 4-layer architecture:
 ## Usage
 
 ```bash
-# Run comprehensive experiment (trains all 8 patterns, ~4 minutes)
-python run_experiment.py
+pip install -r requirements.txt
 
-# Visualize results
-python visualize_results.py
+# Run comprehensive experiment (trains all 8 patterns, ~4 minutes)
+python experiments/exp6_qwen3_dsa_hybrid/run_experiment.py
 ```
 
 ## Files
