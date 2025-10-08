@@ -4,11 +4,11 @@
 
 1. Can replacing full attention with DeepSeek Sparse Attention (DSA) improve the efficiency and performance of a hybrid attention architecture that combines full attention and Gated DeltaNet (GDN)?
 
-- Trains faster in the beginning, but full attention seems to surpass it with more training. More research needed.
+- Trains faster in the beginning, but full attention seems to surpass it with more training. Future work is to investigate this further.
 
 2. Which combination of attention mechanisms across layers produces the best efficiency-performance tradeoff: (1) Full Attention + GDN, (2) DSA + GDN, (3) DSA only, or (4) Full Attention only?
 
-- Currently L → F → F → L (Gated Deltanet → Full Attention → Full Attention → Gated Deltanet). More research needed.
+- Currently L → F → F → L (Gated Deltanet → Full Attention → Full Attention → Gated Deltanet). Future work is to investigate this further.
 
 #### All 8 Patterns Comparison
 ![Loss Comparison - All Patterns](results/loss_comparison.png)
