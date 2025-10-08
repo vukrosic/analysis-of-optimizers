@@ -15,11 +15,21 @@ We hypothesize that:
 
 ## Experiment Design
 
-Compare 3 attention configurations:
+Compare 8 attention layer patterns across a 4-layer architecture:
 
-1. **Baseline**: Standard Qwen3-Next (full attention + gated deltanet)
-2. **DSA-Only**: All layers use DeepSeek Sparse Attention  
-3. **Hybrid**: DSA for full attention, gated deltanet for linear attention
+### Original Patterns (Full Attention + Linear Attention)
+1. **Sandwich**: L → F → F → L
+2. **Alternating**: F → L → F → L
+3. **Linear First**: L → L → F → F
+4. **Full First**: F → F → L → L
+
+### DSA Patterns (DeepSeek Sparse Attention + Linear Attention)
+5. **DSA Sandwich**: L → D → D → L
+6. **DSA Alternating**: D → L → D → L
+7. **DSA Linear First**: L → L → D → D
+8. **DSA Full First**: D → D → L → L
+
+**Legend**: L = Linear Attention (Gated DeltaNet), F = Full Attention, D = DeepSeek Sparse Attention
 
 ## Usage
 
@@ -27,8 +37,8 @@ Compare 3 attention configurations:
 # Test models work
 python test_models.py
 
-# Run experiment (trains all 3 variants)
-python run_experiment.py
+# Run comprehensive experiment (trains all 8 patterns, ~4 minutes)
+python test_all_variants.py
 
 # Visualize results
 python visualize_results.py
@@ -36,9 +46,10 @@ python visualize_results.py
 
 ## Files
 
-- `config.py` - 3 configs (SMALL/MEDIUM/LARGE)
-- `models.py` - 3 model variants (imports from existing code)
-- `run_experiment.py` - Training script
-- `test_models.py` - Quick test
-- `visualize_results.py` - Results plots
+- `config.py` - Configuration options (SMALL/MEDIUM/LARGE)
+- `models.py` - Enhanced model supporting all 3 attention types (F, L, D)
+- `test_all_variants.py` - Main experiment script (tests all 8 patterns)
+- `test_models.py` - Quick sanity check for model creation
+- `visualize_results.py` - Results visualization
+- `results/` - Experiment outputs (JSON results + PNG plots)
 

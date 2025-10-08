@@ -19,7 +19,7 @@ matplotlib.use('Agg')  # Use non-interactive backend
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, root_dir)
 
-from experiments.exp6_qwen3_dsa_hybrid.enhanced_models import EnhancedQwen3NextForCausalLM
+from experiments.exp6_qwen3_dsa_hybrid.models import EnhancedQwen3NextForCausalLM
 from models.qwen3_next.configuration_qwen3_next import Qwen3NextConfig
 from models.qwen3_next.modular_qwen3_next import Qwen3NextForCausalLM
 from data.loader import load_and_cache_data
@@ -27,10 +27,60 @@ from data.dataset import TextTokenDataset
 from utils.helpers import set_seed
 from torch.utils.data import DataLoader
 
-# Import training functions from baseline test
-from experiments.exp6_qwen3_dsa_hybrid.test_qwen3_baseline import (
-    count_parameters, evaluate
-)
+
+def count_parameters(model):
+    """Count trainable parameters in the model"""
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def evaluate(model, dataloader, device, max_batches=None):
+    """Evaluate the model and return metrics"""
+    model.eval()
+    total_loss = 0
+    total_correct = 0
+    total_tokens = 0
+    
+    with torch.no_grad():
+        for i, batch in enumerate(dataloader):
+            if max_batches and i >= max_batches:
+                break
+            
+            # Handle tuple output from dataset (x, y)
+            if isinstance(batch, (list, tuple)):
+                input_ids = batch[0].to(device)
+            else:
+                input_ids = batch.to(device)
+            labels = input_ids.clone()
+            
+            outputs = model(input_ids=input_ids, labels=labels)
+            loss = outputs.loss
+            logits = outputs.logits
+            
+            # Calculate accuracy
+            predictions = logits.argmax(dim=-1)
+            # Shift for next-token prediction
+            shift_preds = predictions[..., :-1].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            correct = (shift_preds == shift_labels).sum().item()
+            
+            total_loss += loss.item() * input_ids.numel()
+            total_correct += correct
+            total_tokens += shift_labels.numel()
+            
+            # Clean up to prevent memory buildup
+            del outputs, logits, predictions, shift_preds, shift_labels, input_ids, labels, loss
+            if device.type == 'cuda':
+                torch.cuda.empty_cache()
+    
+    avg_loss = total_loss / total_tokens if total_tokens > 0 else 0
+    accuracy = total_correct / total_tokens if total_tokens > 0 else 0
+    perplexity = torch.exp(torch.tensor(avg_loss)).item()
+    
+    return {
+        'loss': avg_loss,
+        'accuracy': accuracy,
+        'perplexity': perplexity,
+    }
 
 
 def train_epoch_with_history(model, dataloader, optimizer, device, max_steps, total_steps):
@@ -139,6 +189,9 @@ def test_pattern(pattern_name, layer_types, use_dsa=False):
         sparse_top_k=64,  # Reduced for small models
     )
     
+    # Set attention implementation (required for full_attention layers)
+    config._attn_implementation = "eager"
+    
     # Load cached data
     from dataclasses import dataclass
     @dataclass
@@ -163,11 +216,8 @@ def test_pattern(pattern_name, layer_types, use_dsa=False):
     train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=0)
     
-    # Create model - use Enhanced model if DSA is involved
-    if use_dsa:
-        model = EnhancedQwen3NextForCausalLM(config).to(device)
-    else:
-        model = Qwen3NextForCausalLM(config).to(device)
+    # Create model - use Enhanced model for all patterns (supports all layer types)
+    model = EnhancedQwen3NextForCausalLM(config).to(device)
     
     num_params = count_parameters(model)
     print(f"Parameters: {num_params:,}")
@@ -223,9 +273,11 @@ def test_pattern(pattern_name, layer_types, use_dsa=False):
     print(f"  Val PPL: {val_metrics['perplexity']:.2f}")
     print(f"  Time: {training_time:.1f}s")
     
-    # Clear GPU
+    # Clear GPU memory more thoroughly
     del model, optimizer
-    torch.cuda.empty_cache()
+    if device.type == 'cuda':
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
     
     return result
 
