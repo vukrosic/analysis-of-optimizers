@@ -34,11 +34,8 @@ Compare 8 attention layer patterns across a 4-layer architecture:
 ## Usage
 
 ```bash
-# Test models work
-python test_models.py
-
 # Run comprehensive experiment (trains all 8 patterns, ~4 minutes)
-python test_all_variants.py
+python run_experiment.py
 
 # Visualize results
 python visualize_results.py
@@ -46,10 +43,9 @@ python visualize_results.py
 
 ## Files
 
-- `config.py` - Configuration options (SMALL/MEDIUM/LARGE)
+- `run_experiment.py` - Main experiment script (trains and compares all 8 patterns)
 - `models.py` - Enhanced model supporting all 3 attention types (F, L, D)
-- `test_all_variants.py` - Main experiment script (tests all 8 patterns)
-- `test_models.py` - Quick sanity check for model creation
+- `config.py` - Configuration options (SMALL/MEDIUM/LARGE)
 - `visualize_results.py` - Results visualization
 - `results/` - Experiment outputs (JSON results + PNG plots)
 
