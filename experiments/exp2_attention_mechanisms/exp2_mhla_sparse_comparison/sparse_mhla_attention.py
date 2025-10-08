@@ -20,8 +20,8 @@ import os
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, root_dir)
 
-from deepseek_modeling import DeepseekV3Attention
-from configuration_deepseek import DeepseekV3Config
+from models.deepseek_v3.deepseek_modeling import DeepseekV3Attention
+from models.deepseek_v3.configuration_deepseek import DeepseekV3Config
 
 
 class LightningIndexer(nn.Module):

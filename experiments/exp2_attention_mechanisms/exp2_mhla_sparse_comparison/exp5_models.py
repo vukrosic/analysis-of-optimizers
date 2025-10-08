@@ -21,8 +21,8 @@ sys.path.insert(0, root_dir)
 
 # Import from parent models package
 from models.components import MixtureOfExperts
-from deepseek_modeling import DeepseekV3Attention, DeepseekV3RMSNorm
-from configuration_deepseek import DeepseekV3Config
+from models.deepseek_v3.deepseek_modeling import DeepseekV3Attention, DeepseekV3RMSNorm
+from models.deepseek_v3.configuration_deepseek import DeepseekV3Config
 
 # Import local sparse_mhla_attention module
 from sparse_mhla_attention import DeepSeekSparseMLHA

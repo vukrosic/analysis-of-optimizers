@@ -115,7 +115,7 @@ class AdaptiveDeepSeekSparseAttention(nn.Module):
             self.d_model = config.d_model
         
         # Import DeepSeek attention from existing codebase
-        from deepseek_modeling import DeepseekV3Attention
+        from models.deepseek_v3.deepseek_modeling import DeepseekV3Attention
         
         # Convert dict config to SimpleDeepSeekConfig if needed
         if isinstance(config, dict):
@@ -652,7 +652,7 @@ class FixedSparseTransformerLayer(nn.Module):
         self.indexer = LightningIndexer(d_model, indexer_heads=4, indexer_dim=64)
         
         # DeepSeek attention
-        from deepseek_modeling import DeepseekV3Attention
+        from models.deepseek_v3.deepseek_modeling import DeepseekV3Attention
         
         # Convert dict config to SimpleDeepSeekConfig if needed
         if isinstance(config, dict):
