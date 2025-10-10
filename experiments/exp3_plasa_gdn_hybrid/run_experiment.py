@@ -133,16 +133,21 @@ def train_epoch_with_history(model, dataloader, optimizer, device, max_steps, to
 # 8 Attention Patterns to test
 ALL_PATTERNS = {
     # Original patterns (F = full_attention, L = linear_attention)
-    "1_sandwich": ["linear_attention", "full_attention", "full_attention", "linear_attention"],
-    "2_alternating": ["full_attention", "linear_attention", "full_attention", "linear_attention"],
-    "3_linear_first": ["linear_attention", "linear_attention", "full_attention", "full_attention"],
-    "4_full_first": ["full_attention", "full_attention", "linear_attention", "linear_attention"],
+    "1_all_plasa": ["plasa_attention", "plasa_attention", "plasa_attention", "plasa_attention"],  # Extra pattern with all PLASA
+    "2_all_full": ["full_attention", "full_attention", "full_attention", "full_attention"],  # Extra pattern with all Full
+    "3_all_linear": ["linear_attention", "linear_attention", "linear_attention", "linear_attention"],  # Extra pattern with all Linear
 
     # PLASA patterns (P = plasa_attention with PROGRESSIVE_SPARSE, L = linear_attention)
-    "5_plasa_sandwich": ["linear_attention", "plasa_attention", "plasa_attention", "linear_attention"],
-    "6_plasa_alternating": ["plasa_attention", "linear_attention", "plasa_attention", "linear_attention"],
-    "7_plasa_linear_first": ["linear_attention", "linear_attention", "plasa_attention", "plasa_attention"],
-    "8_plasa_full_first": ["plasa_attention", "plasa_attention", "linear_attention", "linear_attention"],
+    "4_plasa_sandwich": ["linear_attention", "plasa_attention", "plasa_attention", "linear_attention"],
+    "5_plasa_alternating": ["plasa_attention", "linear_attention", "plasa_attention", "linear_attention"],
+    "6_plasa_linear_first": ["linear_attention", "linear_attention", "plasa_attention", "plasa_attention"],
+    "7_plasa_full_first": ["plasa_attention", "plasa_attention", "linear_attention", "linear_attention"],
+
+    "8_sandwich": ["linear_attention", "full_attention", "full_attention", "linear_attention"],
+    "9_alternating": ["full_attention", "linear_attention", "full_attention", "linear_attention"],
+    "10_linear_first": ["linear_attention", "linear_attention", "full_attention", "full_attention"],
+    "11_full_first": ["full_attention", "full_attention", "linear_attention", "linear_attention"],
+
 }
 
 
@@ -291,9 +296,10 @@ def main():
     print("="*70)
     print("ADAPTIVE SPARSE ATTENTION EXPERIMENT (EXP3)")
     print("="*70)
-    print("\nTesting 8 patterns:")
+    print("\nTesting 11 patterns:")
     print("  - 4 Original: Full Attention (F) + Linear Attention (L)")
     print("  - 4 PLASA: Per-Layer Adaptive Sparse (P) + Linear Attention (L)")
+    print("  - 3 Extra: All PLASA (P), All Full (F), All Linear (L)")
     print("\nPLASA uses PROGRESSIVE_SPARSE schedule:")
     print("  - Early layers: Dense (k=L)")
     print("  - Middle layers: Aggressive sparse (k=L/4)")
@@ -321,7 +327,7 @@ def main():
     
     # Summary Tables
     print(f"\n{'='*70}")
-    print("FINAL RESULTS - ALL 8 PATTERNS")
+    print("FINAL RESULTS - ALL PATTERNS")
     print(f"{'='*70}\n")
     
     # Sort by validation loss (best first)
