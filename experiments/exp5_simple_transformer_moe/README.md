@@ -34,11 +34,10 @@ Extended the best learning rate for 10x more steps to observe long-term converge
 | Long Seq | 0.0745 | 98.45% | 6.99 min |
 | Large Batch | 0.1025 | 98.00% | 6.97 min |
 
-## Conclusion
+## Important Caveat
 
-**Winner**: Balanced strategy (batch=26, seq_len=1024, lr=0.03)
-- Achieved lowest validation loss and highest accuracy
-- Best trade-off between batch size and sequence length
+While the results show that large batch size trains faster than long sequence length in terms of validation loss, it's important to note that **longer sequences provide more context** and should theoretically enable the model to learn more complex patterns over time. Validation loss alone may not capture the full picture of model capability.
 
-**Key Insight**: Moderate values for both batch size and sequence length outperform extreme configurations in either dimension.
+Future Work should contain more benchmarks and evaluation.
 
+The current validation loss metric may favor faster convergence but doesn't necessarily reflect the model's ability to leverage extended context windows.
