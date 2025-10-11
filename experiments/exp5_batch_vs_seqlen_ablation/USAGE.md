@@ -1,52 +1,93 @@
 # MoE Ablation Study - Quick Guide
 
-## 🎯 New Simple Approach (Recommended)
+## 🎯 Simple Approach (Recommended)
 
-### 1. Edit configs in `configs_ablation.py`
-```python
-CUSTOM = AblationConfig(
-    name="custom",
-    batch_size=32,      # ← Edit to max out GPU
-    seq_len=384,        # ← Adjust based on memory
-    lr=0.015,
-    grad_accum=2,
-    max_steps=50
-)
+### 1. List available configs
+```bash
+python run_ablation.py              # Shows all available configs
 ```
 
-### 2. Run your config
+### 2. Run a config
 ```bash
-python run_ablation.py custom
+python run_ablation.py large_batch_lr003
 ```
 
 ### Available configs:
 ```bash
-python run_ablation.py              # List all configs
-python run_ablation.py quick        # Quick test (5 steps)
-python run_ablation.py large_batch  # Large batch strategy
-python run_ablation.py long_seq     # Long sequence strategy
-python run_ablation.py balanced     # Balanced approach
-python run_ablation.py max_batch    # Push batch size limit
-python run_ablation.py max_seq      # Push sequence length limit
+# LR = 0.01 configs
+python run_ablation.py large_batch_lr001    # batch=104, seqlen=256
+python run_ablation.py long_seq_lr001       # batch=6, seqlen=4096
+python run_ablation.py balanced_lr001       # batch=26, seqlen=1024
+
+# LR = 0.02 configs  
+python run_ablation.py large_batch_lr002
+python run_ablation.py long_seq_lr002
+python run_ablation.py balanced_lr002
+
+# LR = 0.03 configs
+python run_ablation.py large_batch_lr003
+python run_ablation.py long_seq_lr003
+python run_ablation.py balanced_lr003
+
+# LR = 0.04 configs
+python run_ablation.py large_batch_lr004
+python run_ablation.py long_seq_lr004
+python run_ablation.py balanced_lr004
+
+# Extended 1000-step runs (LR=0.03)
+python run_ablation.py large_batch_lr003_1000steps
+python run_ablation.py long_seq_lr003_1000steps
+python run_ablation.py balanced_lr003_1000steps
+```
+
+### 3. Create custom config
+Edit `configs_ablation.py` and add your config:
+```python
+MY_CUSTOM = AblationConfig(
+    name="my_custom",
+    batch_size=32,      # ← Edit to max out GPU
+    seq_len=384,        # ← Adjust based on memory
+    lr=0.03,
+    grad_accum=2,
+    max_steps=100
+)
+```
+
+Then add it to the `CONFIGS` registry at the bottom:
+```python
+CONFIGS = {
+    # ... existing configs ...
+    'my_custom': MY_CUSTOM,  # ← Add this line
+}
+```
+
+Run it:
+```bash
+python run_ablation.py my_custom
 ```
 
 ## 📊 Plot Results
 ```bash
-python plot_results.py
+python plot_part1.py        # Part 1: LR sweep results
+python plot_part2.py        # Part 2: Extended training results
+python plot_val_vs_time_tokens.py  # Validation curves
 ```
 
 ## 💡 Workflow for Finding Max Memory
 
-1. **Start with quick test:**
+1. **Start with a small config:**
    ```bash
-   python run_ablation.py quick
+   python run_ablation.py large_batch_lr003
    ```
 
-2. **Edit `configs_ablation.py` and increase batch/seqlen**
+2. **Create your own config in `configs_ablation.py`:**
+   - Copy one of the existing configs
+   - Increase `batch_size` or `seq_len`
+   - Add it to the `CONFIGS` dictionary
 
-3. **Test again:**
+3. **Test your config:**
    ```bash
-   python run_ablation.py custom
+   python run_ablation.py my_custom
    ```
 
 4. **Check memory usage in output** (shows peak memory)
