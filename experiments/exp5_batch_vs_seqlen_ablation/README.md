@@ -1,5 +1,7 @@
 # Experiment 5: Batch Size vs Sequence Length Ablation Study
 
+📺 **Tutorial Video**: [Watch on YouTube](https://youtu.be/bu5dhaLmr7E)
+
 ## Overview
 Two-part experiment investigating the trade-off between batch size and sequence length in MoE transformer training.
 
