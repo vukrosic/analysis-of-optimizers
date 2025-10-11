@@ -3,10 +3,21 @@
 
 case "$1" in
   plot)
-    python plot_results.py
+    echo "Generating Part 1 plots..."
+    python plot_part1.py
+    echo "Generating Part 2 plots..."
+    python plot_part2.py
+    echo "Generating validation curves..."
+    python plot_val_vs_time_tokens.py
     ;;
-  all)
-    python ablation_batch_vs_seqlen.py
+  plot1)
+    python plot_part1.py
+    ;;
+  plot2)
+    python plot_part2.py
+    ;;
+  summary)
+    python summarize_results.py
     ;;
   custom)
     # Example: ./run.sh custom 32 512 0.015 2 100
@@ -14,8 +25,10 @@ case "$1" in
     ;;
   *)
     echo "Usage:"
-    echo "  ./run.sh all                                    # Run all ablations"
-    echo "  ./run.sh plot                                   # Plot results"
+    echo "  ./run.sh plot                                   # Generate all plots"
+    echo "  ./run.sh plot1                                  # Plot Part 1 only"
+    echo "  ./run.sh plot2                                  # Plot Part 2 only"
+    echo "  ./run.sh summary                                # Print results summary"
     echo "  ./run.sh custom <batch> <seqlen> <lr> [accum] [steps]"
     echo ""
     echo "Examples:"
