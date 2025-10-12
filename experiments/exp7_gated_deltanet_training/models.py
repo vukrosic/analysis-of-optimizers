@@ -7,8 +7,8 @@ import torch
 import torch.nn as nn
 from typing import Optional
 
-# Use FLA's DeltaNet implementation
-from fla.models import DeltaNetConfig, DeltaNetForCausalLM
+# Use FLA's Gated DeltaNet implementation (supports hybrid with attention)
+from fla.models import GatedDeltaNetConfig, GatedDeltaNetForCausalLM
 
 
 def create_gated_deltanet_model(config):
@@ -22,8 +22,8 @@ def create_gated_deltanet_model(config):
     Returns:
         DeltaNetForCausalLM model instance
     """
-    # Convert ExperimentConfig to DeltaNetConfig
-    deltanet_config = DeltaNetConfig(
+    # Convert ExperimentConfig to GatedDeltaNetConfig
+    deltanet_config = GatedDeltaNetConfig(
         vocab_size=config.vocab_size,
         hidden_size=config.hidden_size,
         num_hidden_layers=config.num_hidden_layers,
@@ -67,8 +67,8 @@ def create_gated_deltanet_model(config):
             'rope_theta': config.attn_config.get('rope_theta', 10000.0),
         }
     
-    # Create model using FLA's implementation
-    model = DeltaNetForCausalLM(deltanet_config)
+    # Create model using FLA's Gated DeltaNet implementation
+    model = GatedDeltaNetForCausalLM(deltanet_config)
     
     return model
 
@@ -109,9 +109,22 @@ def verify_model_architecture(model, config):
         has_mlp = hasattr(layer, 'mlp')
         layer_type = layer.__class__.__name__
         
-        # Detect the mixer type (DeltaNet or standard Attention)
+        # Detect the mixer type (GatedDeltaNet or standard Attention)
+        # GatedDeltaNetBlock uses 'attn' attribute (can be either GatedDeltaNet or Attention)
         mixer_type = None
-        if hasattr(layer, 'mixer'):
+        if hasattr(layer, 'attn'):
+            mixer = layer.attn
+            mixer_class = mixer.__class__.__name__
+            if 'DeltaNet' in mixer_class:
+                mixer_type = 'GatedDeltaNet'
+                deltanet_layers.append(i)
+            elif 'Attention' in mixer_class:
+                mixer_type = 'Attention'
+                attention_layers.append(i)
+            else:
+                mixer_type = mixer_class
+        elif hasattr(layer, 'mixer'):
+            # Fallback for other layer types
             mixer = layer.mixer
             mixer_class = mixer.__class__.__name__
             if 'DeltaNet' in mixer_class:

@@ -1,10 +1,11 @@
 """
 Training script for Hybrid DeltaNet + Attention model
-Experiment 7: RTX 4090 Hybrid architecture and H100 experiment variants
+Experiment 7: RTX 4090 and H100 experiment variants
 
 Available Experiments:
     RTX 4090 (24GB):
-        - Default: Hybrid model with 25% attention on [3,7,11]
+        - Default: Hybrid sparse - 25% attention on [3,7,11]
+        - 4090_alternating: Hybrid alternating - 50% attention on [1,3,5,7,9,11]
     
     H100 (80GB):
         - h100_deltanet: Pure DeltaNet (baseline)
@@ -14,8 +15,9 @@ Available Experiments:
         - h100_hybrid_late: 33% attention (last 8 layers)
 
 Usage:
-    # Default - RTX 4090 Hybrid model
-    python run_experiment.py
+    # RTX 4090 experiments
+    python run_experiment.py                                # Default: sparse hybrid
+    python run_experiment.py --experiment 4090_alternating  # Alternating hybrid
     
     # H100 experiments
     python run_experiment.py --experiment h100_deltanet
@@ -50,6 +52,7 @@ sys.path.insert(0, root_dir)
 from experiments.exp7_gated_deltanet_training.config import (
     ExperimentConfig,
     get_hybrid_rtx4090_config,
+    get_hybrid_rtx4090_alternating,
     # H100 experiment variants
     get_h100_deltanet_only,
     get_h100_transformer_only,
@@ -428,10 +431,11 @@ def main():
     parser = argparse.ArgumentParser(description='Train Hybrid DeltaNet + Attention model')
     parser.add_argument('--experiment', type=str, default=None,
                         choices=[
+                            '4090_alternating',
                             'h100_deltanet', 'h100_transformer',
                             'h100_hybrid_sparse', 'h100_hybrid_alternating', 'h100_hybrid_late',
                         ],
-                        help='H100 experiment variant (default: RTX 4090 hybrid)')
+                        help='Experiment variant (default: RTX 4090 hybrid sparse)')
     parser.add_argument('--resume', type=str, default=None, 
                         help='Path to checkpoint to resume from (e.g., checkpoints/best_model.pt)')
     parser.add_argument('--extend-steps', type=int, default=None,
@@ -439,18 +443,22 @@ def main():
     args = parser.parse_args()
     
     # Experiment configuration mapping
+    EXPERIMENTS = {
+        # RTX 4090
+        '4090_alternating': ('RTX 4090: Hybrid Alternating 50%', get_hybrid_rtx4090_alternating),
+        # H100
+        'h100_deltanet': ('H100: Pure DeltaNet', get_h100_deltanet_only),
+        'h100_transformer': ('H100: Pure Transformer', get_h100_transformer_only),
+        'h100_hybrid_sparse': ('H100: Hybrid Sparse 17%', get_h100_hybrid_sparse),
+        'h100_hybrid_alternating': ('H100: Hybrid Alternating 50%', get_h100_hybrid_alternating),
+        'h100_hybrid_late': ('H100: Hybrid Late 33%', get_h100_hybrid_late),
+    }
+    
     if args.experiment is None:
-        # Default: RTX 4090 Hybrid
-        exp_name = 'Hybrid RTX 4090 DeltaNet + Attention'
+        # Default: RTX 4090 Hybrid Sparse
+        exp_name = 'RTX 4090: Hybrid Sparse 25%'
         config = get_hybrid_rtx4090_config()
     else:
-        EXPERIMENTS = {
-            'h100_deltanet': ('H100 Exp 1: Pure DeltaNet', get_h100_deltanet_only),
-            'h100_transformer': ('H100 Exp 2: Pure Transformer', get_h100_transformer_only),
-            'h100_hybrid_sparse': ('H100 Exp 3: Hybrid Sparse 17%', get_h100_hybrid_sparse),
-            'h100_hybrid_alternating': ('H100 Exp 4: Hybrid Alternating 50%', get_h100_hybrid_alternating),
-            'h100_hybrid_late': ('H100 Exp 5: Hybrid Late 33%', get_h100_hybrid_late),
-        }
         exp_name, get_config_fn = EXPERIMENTS[args.experiment]
         config = get_config_fn()
     
@@ -569,8 +577,21 @@ def main():
         print("⚠ FLA not found, using PyTorch implementation")
     
     # Train
-    results_dir = Path(__file__).parent / "results"
-    checkpoints_dir = Path(__file__).parent / "checkpoints"
+    # Organize results and checkpoints by experiment variant
+    exp_base_dir = Path(__file__).parent
+    if args.experiment:
+        # H100 variants get their own directories
+        exp_subdir = args.experiment
+        results_dir = exp_base_dir / f"results_{exp_subdir}"
+        checkpoints_dir = exp_base_dir / f"checkpoints_{exp_subdir}"
+    else:
+        # Default RTX 4090 uses standard directories
+        results_dir = exp_base_dir / "results"
+        checkpoints_dir = exp_base_dir / "checkpoints"
+    
+    print(f"\n📁 Output directories:")
+    print(f"   Checkpoints: {checkpoints_dir}")
+    print(f"   Results: {results_dir}")
     
     trainer = Trainer(model, config, train_loader, val_loader, device, save_dir=checkpoints_dir)
     
@@ -584,6 +605,8 @@ def main():
     results_dir.mkdir(exist_ok=True, parents=True)
     
     results_summary = {
+        'experiment_name': exp_name,
+        'experiment_variant': args.experiment if args.experiment else 'rtx4090_hybrid',
         'config': {
             'hidden_size': config.hidden_size,
             'num_layers': config.num_hidden_layers,
@@ -599,7 +622,9 @@ def main():
             'best_val_loss': results['best_val_loss'],
             'final_train_loss': results['train_history'][-1]['loss'] if results['train_history'] else None,
             'final_val_metrics': results['val_history'][-1] if results['val_history'] else None,
-        }
+        },
+        'checkpoints_dir': str(checkpoints_dir),
+        'results_dir': str(results_dir),
     }
     
     with open(results_dir / 'training_results.json', 'w') as f:
@@ -615,7 +640,22 @@ def main():
     )
     
     print("\n" + "="*70)
-    print("Experiment completed successfully!")
+    print("✅ EXPERIMENT COMPLETED SUCCESSFULLY!")
+    print("="*70)
+    print(f"\n📊 Results Summary:")
+    print(f"   Experiment: {exp_name}")
+    print(f"   Best Val Loss: {results['best_val_loss']:.4f}")
+    print(f"   Training Time: {results['total_time']:.1f}s")
+    print(f"\n💾 Saved Files:")
+    print(f"   Checkpoints: {checkpoints_dir}/")
+    print(f"   Results: {results_dir}/")
+    print(f"   Training curves: {results_dir / 'training_curves.png'}")
+    print(f"   JSON results: {results_dir / 'training_results.json'}")
+    print(f"\n🔬 Next Steps:")
+    print(f"   • Run benchmarks: python benchmarks/arc_challenge.py --checkpoint {checkpoints_dir}/best_model.pt")
+    print(f"   • Generate text: python inference.py")
+    if args.experiment:
+        print(f"   • Compare models: python benchmarks/compare_models.py --checkpoints {checkpoints_dir}/best_model.pt ...")
     print("="*70)
 
 

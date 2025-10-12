@@ -110,18 +110,39 @@ def get_rtx4090_optimized_config():
 
 def get_hybrid_rtx4090_config():
     """
-    Hybrid RTX 4090 config with strategic attention placement
+    Hybrid RTX 4090 config with strategic sparse attention placement
     DeltaNet for efficiency, attention at key positions for quality
     
     Architecture:
     - 12 layers total
-    - Attention on layers [3, 7, 11] (25%, 58%, 92% through network)
+    - Attention on layers [3, 7, 11] (25% - 3/12 layers)
     - DeltaNet on layers [0, 1, 2, 4, 5, 6, 8, 9, 10]
+    - Strategic placement: early-mid, mid, near-end
     """
     config = get_rtx4090_optimized_config()
-    # For 12 layers: attention on [3, 7, 11] (25%, 58%, 92%)
     config.attn_config = {
         'layers': [3, 7, 11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_hybrid_rtx4090_alternating():
+    """
+    Hybrid RTX 4090 config with alternating layers
+    Balanced mix of DeltaNet and attention throughout
+    
+    Architecture:
+    - 12 layers total
+    - Attention on layers [1, 3, 5, 7, 9, 11] (50% - 6/12 layers)
+    - DeltaNet on layers [0, 2, 4, 6, 8, 10]
+    - Alternating pattern for balanced compute/quality trade-off
+    """
+    config = get_rtx4090_optimized_config()
+    config.attn_config = {
+        'layers': [1, 3, 5, 7, 9, 11],
         'window_size': 2048,
         'qkv_bias': False,
         'rope_theta': 10000.0,
