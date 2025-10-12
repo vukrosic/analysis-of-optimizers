@@ -4,6 +4,8 @@ Ablation study testing 13 architectures (0-100% attention) to find the optimal D
 
 Experiments are not exhaustive, but there is a strong base to continue experimentation.
 
+**📺 Video Overview:** [Watch on YouTube](https://www.youtube.com/watch?v=tf3ESMqDOTY)
+
 ---
 
 ## 🏆 Winner: Hybrid Sparse 17%
