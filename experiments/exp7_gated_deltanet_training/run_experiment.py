@@ -1,10 +1,26 @@
 """
 Training script for Hybrid DeltaNet + Attention model
-Experiment 7: RTX 4090 Hybrid architecture with DeltaNet and standard attention layers
+Experiment 7: RTX 4090 Hybrid architecture and H100 experiment variants
+
+Available Experiments:
+    RTX 4090 (24GB):
+        - Default: Hybrid model with 25% attention on [3,7,11]
+    
+    H100 (80GB):
+        - h100_deltanet: Pure DeltaNet (baseline)
+        - h100_transformer: Pure Transformer (full attention)
+        - h100_hybrid_sparse: 17% attention on [5,11,17,23]
+        - h100_hybrid_alternating: 50% attention (every other layer)
+        - h100_hybrid_late: 33% attention (last 8 layers)
 
 Usage:
-    # Default - Hybrid RTX 4090 model
+    # Default - RTX 4090 Hybrid model
     python run_experiment.py
+    
+    # H100 experiments
+    python run_experiment.py --experiment h100_deltanet
+    python run_experiment.py --experiment h100_transformer
+    python run_experiment.py --experiment h100_hybrid_sparse
     
     # Resume from checkpoint
     python run_experiment.py --resume checkpoints/best_model.pt
@@ -34,6 +50,12 @@ sys.path.insert(0, root_dir)
 from experiments.exp7_gated_deltanet_training.config import (
     ExperimentConfig,
     get_hybrid_rtx4090_config,
+    # H100 experiment variants
+    get_h100_deltanet_only,
+    get_h100_transformer_only,
+    get_h100_hybrid_sparse,
+    get_h100_hybrid_alternating,
+    get_h100_hybrid_late,
 )
 from experiments.exp7_gated_deltanet_training.models import (
     GatedDeltaNetWrapper,
@@ -403,19 +425,38 @@ def plot_training_curves(train_history, val_history, save_path):
 def main():
     """Main experiment function"""
     # Parse command-line arguments
-    parser = argparse.ArgumentParser(description='Train Hybrid RTX 4090 DeltaNet model')
+    parser = argparse.ArgumentParser(description='Train Hybrid DeltaNet + Attention model')
+    parser.add_argument('--experiment', type=str, default=None,
+                        choices=[
+                            'h100_deltanet', 'h100_transformer',
+                            'h100_hybrid_sparse', 'h100_hybrid_alternating', 'h100_hybrid_late',
+                        ],
+                        help='H100 experiment variant (default: RTX 4090 hybrid)')
     parser.add_argument('--resume', type=str, default=None, 
                         help='Path to checkpoint to resume from (e.g., checkpoints/best_model.pt)')
     parser.add_argument('--extend-steps', type=int, default=None,
                         help='Extend training to this many total steps (useful when resuming)')
     args = parser.parse_args()
     
-    print("="*70)
-    print("EXPERIMENT 7: Hybrid RTX 4090 DeltaNet + Attention Training")
-    print("="*70)
+    # Experiment configuration mapping
+    if args.experiment is None:
+        # Default: RTX 4090 Hybrid
+        exp_name = 'Hybrid RTX 4090 DeltaNet + Attention'
+        config = get_hybrid_rtx4090_config()
+    else:
+        EXPERIMENTS = {
+            'h100_deltanet': ('H100 Exp 1: Pure DeltaNet', get_h100_deltanet_only),
+            'h100_transformer': ('H100 Exp 2: Pure Transformer', get_h100_transformer_only),
+            'h100_hybrid_sparse': ('H100 Exp 3: Hybrid Sparse 17%', get_h100_hybrid_sparse),
+            'h100_hybrid_alternating': ('H100 Exp 4: Hybrid Alternating 50%', get_h100_hybrid_alternating),
+            'h100_hybrid_late': ('H100 Exp 5: Hybrid Late 33%', get_h100_hybrid_late),
+        }
+        exp_name, get_config_fn = EXPERIMENTS[args.experiment]
+        config = get_config_fn()
     
-    # Use the hybrid RTX 4090 configuration
-    config = get_hybrid_rtx4090_config()
+    print("="*70)
+    print(f"EXPERIMENT 7: {exp_name}")
+    print("="*70)
     
     set_seed(config.seed)
     device = torch.device(config.device if torch.cuda.is_available() else 'cpu')
