@@ -47,7 +47,7 @@ os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, root_dir)
 
-from experiments.exp7_gated_deltanet_training.config import (
+from experiments.exp7_hybrid_deltanet_ablation.config import (
     get_h100_deltanet_only,
     get_h100_transformer_only,
     get_h100_hybrid_sparse,
@@ -62,8 +62,8 @@ from experiments.exp7_gated_deltanet_training.config import (
     get_h100_hybrid_83,
     get_h100_hybrid_92,
 )
-from experiments.exp7_gated_deltanet_training.models import GatedDeltaNetWrapper
-from experiments.exp7_gated_deltanet_training.run_experiment import Trainer
+from experiments.exp7_hybrid_deltanet_ablation.models import GatedDeltaNetWrapper
+from experiments.exp7_hybrid_deltanet_ablation.run_experiment import Trainer
 from data.loader import load_and_cache_data
 from utils.helpers import set_seed
 
