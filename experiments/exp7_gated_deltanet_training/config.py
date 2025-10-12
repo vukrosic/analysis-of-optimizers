@@ -127,3 +127,59 @@ def get_hybrid_rtx4090_config():
         'rope_theta': 10000.0,
     }
     return config
+
+
+# H100 Configuration (80GB VRAM)
+
+def get_h100_optimized_config():
+    """Optimized for H100 (80GB VRAM) - larger model, longer sequences"""
+    return ExperimentConfig(
+        # Larger model leveraging H100's 80GB VRAM (3.3x more than 4090)
+        hidden_size=1536,
+        num_hidden_layers=24,
+        num_attention_heads=24,
+        hidden_ratio=4,
+        
+        # Longer sequences and larger batch
+        max_seq_len=2048,
+        batch_size=48,
+        
+        # Training params - 1000 steps
+        max_steps=1000,
+        warmup_steps=100,
+        learning_rate=1e-3,
+        gradient_clip=1.0,
+        
+        # Data - NO REPETITION for 1000 steps
+        # Tokens needed: 48 batch × 2048 seq × 1000 steps = 98,304,000 (98.3M)
+        # With 2x safety margin = 196,608,000 (196.6M)
+        # At ~750 tokens per document, need ~262,000 documents
+        num_documents=300_000,
+        max_tokens=200_000_000,  # 200M tokens
+        
+        # Evaluation settings
+        eval_interval=50,
+        eval_batches=20,
+        log_interval=10,
+    )
+
+
+def get_hybrid_h100_config():
+    """
+    Hybrid H100 config with strategic attention placement
+    DeltaNet for efficiency, attention at key positions for quality
+    
+    Architecture:
+    - 24 layers total
+    - Attention on layers [5, 11, 17, 23] (21%, 46%, 71%, 96% through network)
+    - DeltaNet on remaining 20 layers
+    """
+    config = get_h100_optimized_config()
+    # For 24 layers: attention on [5, 11, 17, 23]
+    config.attn_config = {
+        'layers': [5, 11, 17, 23],
+        'window_size': 4096,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
