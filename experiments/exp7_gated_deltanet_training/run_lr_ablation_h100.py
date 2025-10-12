@@ -167,15 +167,16 @@ def plot_lr_comparison(all_results, save_dir, is_partial=False):
     
     for i, lr in enumerate(lrs):
         losses = []
-        for arch in architectures:
+        valid_positions = []
+        for idx, arch in enumerate(architectures):
             arch_results = [r for r in arch_groups[arch] if r['lr'] == lr]
             if arch_results:
                 losses.append(arch_results[0]['best_val_loss'])
-            else:
-                losses.append(None)
+                valid_positions.append(idx + (i - 1) * width)
         
-        positions = [xi + (i - 1) * width for xi in x]
-        bars = axes[1, 1].bar(positions, losses, width, label=f"LR {lr:.2e}")
+        # Only plot if we have valid data
+        if losses:
+            bars = axes[1, 1].bar(valid_positions, losses, width, label=f"LR {lr:.2e}")
     
     axes[1, 1].set_xticks(x)
     axes[1, 1].set_xticklabels(architectures, rotation=15, ha='right')
@@ -224,11 +225,11 @@ def main():
     
     # Ablation configuration - short runs to find optimal LR
     # Using 200 steps like the RTX 4090 ablation
-    ablation_steps = 20
-    warmup_steps = 2  # 10% warmup
-    eval_interval = 4
-    log_interval = 10
-    save_interval = 20
+    ablation_steps = 200
+    warmup_steps = 20  # 10% warmup
+    eval_interval = 40
+    log_interval = 100
+    save_interval = 200
     
     print(f"\nAblation Configuration:")
     print(f"  Steps: {ablation_steps}")
