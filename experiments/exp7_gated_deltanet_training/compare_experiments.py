@@ -16,16 +16,11 @@ matplotlib.use('Agg')
 
 
 def load_experiment_results(exp_variant):
-    """Load results for a specific experiment variant"""
+upda    """Load results for a specific H100 experiment variant"""
     exp_dir = Path(__file__).parent
     
-    if exp_variant in ['rtx4090_hybrid', 'rtx4090_hybrid_sparse']:
-        # Default RTX 4090 uses 'results' directory
-        results_dir = exp_dir / "results"
-    else:
-        # All other variants use results_{variant_name}
-        results_dir = exp_dir / f"results_{exp_variant}"
-    
+    # All H100 variants use results_{variant_name}
+    results_dir = exp_dir / f"results_{exp_variant}"
     results_file = results_dir / "training_results.json"
     
     if not results_file.exists():
@@ -36,24 +31,11 @@ def load_experiment_results(exp_variant):
 
 
 def get_all_completed_experiments():
-    """Find all completed experiment variants"""
+    """Find all completed H100 experiment variants"""
     exp_dir = Path(__file__).parent
     variants = []
     
-    # Check default RTX 4090 (hybrid sparse)
-    if (exp_dir / "results" / "training_results.json").exists():
-        variants.append(('rtx4090_hybrid_sparse', 'RTX 4090 Hybrid Sparse (25%)'))
-    
-    # Check RTX 4090 variants
-    rtx4090_variants = [
-        ('4090_alternating', 'RTX 4090 Hybrid Alternating (50%)'),
-    ]
-    
-    for var_id, var_name in rtx4090_variants:
-        if (exp_dir / f"results_{var_id}" / "training_results.json").exists():
-            variants.append((var_id, var_name))
-    
-    # Check H100 variants
+    # Check all H100 variants
     h100_variants = [
         ('h100_deltanet', 'H100 Pure DeltaNet'),
         ('h100_transformer', 'H100 Pure Transformer'),

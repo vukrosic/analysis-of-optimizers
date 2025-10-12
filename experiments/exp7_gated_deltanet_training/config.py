@@ -73,7 +73,11 @@ class ExperimentConfig:
             self.intermediate_size = self.hidden_size * self.hidden_ratio
 
 
-# RTX 4090 Hybrid Configuration (DeltaNet + Attention)
+# ============================================================================
+# ARCHIVED: RTX 4090 Configurations (Shared Memory Issues with GatedDeltaNet)
+# ============================================================================
+# Note: GatedDeltaNet kernels exceed RTX 4090's shared memory limits
+# Use H100 configurations instead
 
 def get_rtx4090_optimized_config():
     """Optimized for RTX 4090 (24GB VRAM) - 1000 steps with no data repetition"""

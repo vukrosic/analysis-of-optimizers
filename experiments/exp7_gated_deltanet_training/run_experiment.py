@@ -1,28 +1,25 @@
 """
 Training script for Hybrid DeltaNet + Attention model
-Experiment 7: RTX 4090 and H100 experiment variants
+Experiment 7: H100 experiment variants
 
-Available Experiments:
-    RTX 4090 (24GB):
-        - Default: Hybrid sparse - 25% attention on [3,7,11]
-        - 4090_alternating: Hybrid alternating - 50% attention on [1,3,5,7,9,11]
-    
-    H100 (80GB):
-        - h100_deltanet: Pure DeltaNet (baseline)
-        - h100_transformer: Pure Transformer (full attention)
-        - h100_hybrid_sparse: 17% attention on [5,11,17,23]
-        - h100_hybrid_alternating: 50% attention (every other layer)
-        - h100_hybrid_late: 33% attention (last 8 layers)
+Available Experiments (H100 80GB):
+    - h100_deltanet: Pure DeltaNet (baseline)
+    - h100_transformer: Pure Transformer (full attention)
+    - h100_hybrid_sparse: 17% attention on [5,11,17,23] (DEFAULT)
+    - h100_hybrid_alternating: 50% attention (every other layer)
+    - h100_hybrid_late: 33% attention (last 8 layers)
+
+Note: RTX 4090 configs archived due to shared memory limitations with GatedDeltaNet
 
 Usage:
-    # RTX 4090 experiments
-    python run_experiment.py                                # Default: sparse hybrid
-    python run_experiment.py --experiment 4090_alternating  # Alternating hybrid
+    # Default: H100 hybrid sparse
+    python run_experiment.py
     
-    # H100 experiments
+    # Other H100 experiments
     python run_experiment.py --experiment h100_deltanet
     python run_experiment.py --experiment h100_transformer
-    python run_experiment.py --experiment h100_hybrid_sparse
+    python run_experiment.py --experiment h100_hybrid_alternating
+    python run_experiment.py --experiment h100_hybrid_late
     
     # Resume from checkpoint
     python run_experiment.py --resume checkpoints/best_model.pt
@@ -51,9 +48,7 @@ sys.path.insert(0, root_dir)
 
 from experiments.exp7_gated_deltanet_training.config import (
     ExperimentConfig,
-    get_hybrid_rtx4090_config,
-    get_hybrid_rtx4090_alternating,
-    # H100 experiment variants
+    # H100 experiment variants (primary)
     get_h100_deltanet_only,
     get_h100_transformer_only,
     get_h100_hybrid_sparse,
@@ -428,25 +423,21 @@ def plot_training_curves(train_history, val_history, save_path):
 def main():
     """Main experiment function"""
     # Parse command-line arguments
-    parser = argparse.ArgumentParser(description='Train Hybrid DeltaNet + Attention model')
-    parser.add_argument('--experiment', type=str, default=None,
+    parser = argparse.ArgumentParser(description='Train Hybrid DeltaNet + Attention model (H100)')
+    parser.add_argument('--experiment', type=str, default='h100_hybrid_sparse',
                         choices=[
-                            '4090_alternating',
                             'h100_deltanet', 'h100_transformer',
                             'h100_hybrid_sparse', 'h100_hybrid_alternating', 'h100_hybrid_late',
                         ],
-                        help='Experiment variant (default: RTX 4090 hybrid sparse)')
+                        help='H100 experiment variant (default: h100_hybrid_sparse)')
     parser.add_argument('--resume', type=str, default=None, 
                         help='Path to checkpoint to resume from (e.g., checkpoints/best_model.pt)')
     parser.add_argument('--extend-steps', type=int, default=None,
                         help='Extend training to this many total steps (useful when resuming)')
     args = parser.parse_args()
     
-    # Experiment configuration mapping
+    # H100 Experiment configuration mapping
     EXPERIMENTS = {
-        # RTX 4090
-        '4090_alternating': ('RTX 4090: Hybrid Alternating 50%', get_hybrid_rtx4090_alternating),
-        # H100
         'h100_deltanet': ('H100: Pure DeltaNet', get_h100_deltanet_only),
         'h100_transformer': ('H100: Pure Transformer', get_h100_transformer_only),
         'h100_hybrid_sparse': ('H100: Hybrid Sparse 17%', get_h100_hybrid_sparse),
@@ -454,13 +445,9 @@ def main():
         'h100_hybrid_late': ('H100: Hybrid Late 33%', get_h100_hybrid_late),
     }
     
-    if args.experiment is None:
-        # Default: RTX 4090 Hybrid Sparse
-        exp_name = 'RTX 4090: Hybrid Sparse 25%'
-        config = get_hybrid_rtx4090_config()
-    else:
-        exp_name, get_config_fn = EXPERIMENTS[args.experiment]
-        config = get_config_fn()
+    # Get experiment config
+    exp_name, get_config_fn = EXPERIMENTS[args.experiment]
+    config = get_config_fn()
     
     print("="*70)
     print(f"EXPERIMENT 7: {exp_name}")
@@ -577,17 +564,11 @@ def main():
         print("⚠ FLA not found, using PyTorch implementation")
     
     # Train
-    # Organize results and checkpoints by experiment variant
+    # Organize results and checkpoints by H100 experiment variant
     exp_base_dir = Path(__file__).parent
-    if args.experiment:
-        # H100 variants get their own directories
-        exp_subdir = args.experiment
-        results_dir = exp_base_dir / f"results_{exp_subdir}"
-        checkpoints_dir = exp_base_dir / f"checkpoints_{exp_subdir}"
-    else:
-        # Default RTX 4090 uses standard directories
-        results_dir = exp_base_dir / "results"
-        checkpoints_dir = exp_base_dir / "checkpoints"
+    exp_subdir = args.experiment
+    results_dir = exp_base_dir / f"results_{exp_subdir}"
+    checkpoints_dir = exp_base_dir / f"checkpoints_{exp_subdir}"
     
     print(f"\n📁 Output directories:")
     print(f"   Checkpoints: {checkpoints_dir}")

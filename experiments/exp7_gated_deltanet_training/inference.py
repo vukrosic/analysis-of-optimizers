@@ -14,7 +14,7 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 sys.path.insert(0, root_dir)
 
 from experiments.exp7_gated_deltanet_training.models import GatedDeltaNetWrapper
-from experiments.exp7_gated_deltanet_training.config import ExperimentConfig, get_hybrid_rtx4090_config
+from experiments.exp7_gated_deltanet_training.config import ExperimentConfig
 from transformers import AutoTokenizer
 
 
@@ -127,8 +127,17 @@ def generate_text(model, tokenizer, prompt, max_length=100, temperature=1.0, top
 
 def main():
     """Example usage"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Run inference with trained model')
+    parser.add_argument('--checkpoint', type=str, default=None,
+                        help='Path to checkpoint (default: checkpoints_h100_hybrid_sparse/best_model.pt)')
+    parser.add_argument('--experiment', type=str, default='h100_hybrid_sparse',
+                        help='Experiment variant to load (default: h100_hybrid_sparse)')
+    args = parser.parse_args()
+    
     print("="*70)
-    print("Hybrid DeltaNet + Attention Inference")
+    print("Hybrid DeltaNet + Attention Inference (H100)")
     print("="*70)
     
     # Setup
@@ -151,11 +160,16 @@ def main():
     print(f"Device: {device}")
     
     # Load model
-    checkpoint_path = Path(__file__).parent / "checkpoints" / "best_model.pt"
+    if args.checkpoint:
+        checkpoint_path = Path(args.checkpoint)
+    else:
+        # Use default checkpoint from experiment variant
+        checkpoint_path = Path(__file__).parent / f"checkpoints_{args.experiment}" / "best_model.pt"
     
     if not checkpoint_path.exists():
         print(f"\n❌ Checkpoint not found: {checkpoint_path}")
-        print("Please train the model first by running: python run_experiment.py")
+        print(f"Please train the model first:")
+        print(f"  python run_experiment.py --experiment {args.experiment}")
         return
     
     model, config = load_model(checkpoint_path, device, dtype=dtype)
