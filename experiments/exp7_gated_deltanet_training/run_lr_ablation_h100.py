@@ -5,6 +5,10 @@ Tests 3 learning rates for each of 3 architectures:
 - Full Transformer (h100_transformer)  
 - Hybrid Sparse (h100_hybrid_sparse - 17% attention)
 
+Architecture: Uses exp6's proven stable config
+- hidden_size=768, num_layers=12, batch_size=120, seq_len=1024
+- ~60M params, avoids Triton kernel memory issues
+
 Learning rates tested: 5e-4, 1e-3, 2e-3
 
 Usage:
@@ -250,12 +254,12 @@ def main():
     base_config.save_interval = save_interval
     
     # Calculate tokens needed for no repetition:
-    # H100: batch_size=48, max_seq_len=2048
-    # Tokens per step = 48 × 2048 = 98,304
-    # For 200 steps: 98,304 × 200 = 19,660,800 tokens (~19.7M)
-    # With 2x safety margin = 39,321,600 (~39.3M)
+    # H100: batch_size=120, max_seq_len=1024 (matching exp6 architecture)
+    # Tokens per step = 120 × 1024 = 122,880
+    # For 200 steps: 122,880 × 200 = 24,576,000 tokens (~24.6M)
+    # With 2x safety margin = 49,152,000 (~49.2M)
     base_config.num_documents = 60_000
-    base_config.max_tokens = 40_000_000  # 40M tokens for 200 steps (2x margin)
+    base_config.max_tokens = 50_000_000  # 50M tokens for 200 steps (2x margin)
     
     print(f"Batch size: {base_config.batch_size}")
     print(f"Seq length: {base_config.max_seq_len}")
@@ -406,10 +410,11 @@ def main():
     summary = {
         'config': {
             'ablation_steps': ablation_steps,
-            'hidden_size': base_config.hidden_size,
-            'num_layers': base_config.num_hidden_layers,
-            'batch_size': base_config.batch_size,
-            'max_seq_len': base_config.max_seq_len,
+            'hidden_size': base_config.hidden_size,  # 768
+            'num_layers': base_config.num_hidden_layers,  # 12
+            'batch_size': base_config.batch_size,  # 120
+            'max_seq_len': base_config.max_seq_len,  # 1024
+            'note': 'Architecture matches exp6 for stability (proven to work)',
         },
         'architectures_tested': [name for name, _, _ in architectures],
         'learning_rates_tested': learning_rates,

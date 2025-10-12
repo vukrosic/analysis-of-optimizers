@@ -159,17 +159,23 @@ def get_hybrid_rtx4090_alternating():
 # Base configuration for all H100 experiments
 
 def get_h100_base_config():
-    """Base H100 config (80GB VRAM) - shared by all experiments"""
+    """Base H100 config (80GB VRAM) - shared by all experiments
+    
+    Architecture matches exp6 for stability (proven to work):
+    - Same model size: 768 hidden, 12 layers (~60M params)
+    - Optimized batch size: 120 (for ~90% H100 memory utilization)
+    - Sequence length: 1024 (proven stable)
+    """
     return ExperimentConfig(
-        # Larger model leveraging H100's 80GB VRAM (3.3x more than 4090)
-        hidden_size=1536,
-        num_hidden_layers=24,
-        num_attention_heads=24,
+        # Model architecture - same as exp6 for stability
+        hidden_size=768,
+        num_hidden_layers=12,
+        num_attention_heads=12,
         hidden_ratio=4,
         
-        # Longer sequences and larger batch
-        max_seq_len=2048,
-        batch_size=48,
+        # Sequence and batch configuration - optimized for H100
+        max_seq_len=1024,
+        batch_size=120,
         
         # Training params - 1000 steps
         max_steps=1000,
@@ -178,10 +184,10 @@ def get_h100_base_config():
         gradient_clip=1.0,
         
         # Data - NO REPETITION for 1000 steps
-        # Tokens needed: 48 batch × 2048 seq × 1000 steps = 98,304,000 (98.3M)
-        # With 2x safety margin = 196,608,000 (196.6M)
-        num_documents=300_000,
-        max_tokens=200_000_000,  # 200M tokens
+        # Tokens needed: 120 batch × 1024 seq × 1000 steps = 122,880,000 (122.9M)
+        # With 2x safety margin = 245,760,000 (245.8M)
+        num_documents=50_000,
+        max_tokens=200_000_000,  # 200M tokens (1.6x safety margin)
         
         # Evaluation settings
         eval_interval=50,
@@ -206,14 +212,14 @@ def get_h100_deltanet_only():
 def get_h100_transformer_only():
     """
     Experiment 2: Pure Transformer (full attention)
-    - All 24 layers use standard attention
+    - All 12 layers use standard attention
     - O(n²) complexity throughout
     - Baseline comparison for attention quality
     """
     config = get_h100_base_config()
     config.attn_config = {
-        'layers': list(range(24)),  # All layers [0-23]
-        'window_size': 4096,
+        'layers': list(range(12)),  # All layers [0-11]
+        'window_size': 2048,
         'qkv_bias': False,
         'rope_theta': 10000.0,
     }
@@ -223,14 +229,14 @@ def get_h100_transformer_only():
 def get_h100_hybrid_sparse():
     """
     Experiment 3: Hybrid Sparse (~17% attention)
-    - Attention on 4 layers: [5, 11, 17, 23] (21%, 46%, 71%, 96% through network)
-    - DeltaNet on 20 layers
-    - Strategic placement: distributed throughout network
+    - Attention on 2 layers: [5, 11] (42%, 92% through network)
+    - DeltaNet on 10 layers
+    - Strategic placement: mid and late layers
     """
     config = get_h100_base_config()
     config.attn_config = {
-        'layers': [5, 11, 17, 23],
-        'window_size': 4096,
+        'layers': [5, 11],
+        'window_size': 2048,
         'qkv_bias': False,
         'rope_theta': 10000.0,
     }
@@ -240,14 +246,14 @@ def get_h100_hybrid_sparse():
 def get_h100_hybrid_alternating():
     """
     Experiment 4: Hybrid Alternating (50% attention)
-    - Attention on 12 layers: [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23] (every other)
-    - DeltaNet on 12 layers: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
+    - Attention on 6 layers: [1, 3, 5, 7, 9, 11] (every other)
+    - DeltaNet on 6 layers: [0, 2, 4, 6, 8, 10]
     - Balanced mix throughout the network
     """
     config = get_h100_base_config()
     config.attn_config = {
-        'layers': [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23],
-        'window_size': 4096,
+        'layers': [1, 3, 5, 7, 9, 11],
+        'window_size': 2048,
         'qkv_bias': False,
         'rope_theta': 10000.0,
     }
@@ -257,14 +263,14 @@ def get_h100_hybrid_alternating():
 def get_h100_hybrid_late():
     """
     Experiment 5: Hybrid Late (33% attention)
-    - Attention on last 8 layers: [16, 17, 18, 19, 20, 21, 22, 23] (final 1/3)
-    - DeltaNet on first 16 layers: [0-15]
+    - Attention on last 4 layers: [8, 9, 10, 11] (final 1/3)
+    - DeltaNet on first 8 layers: [0-7]
     - Hypothesis: DeltaNet for early processing, attention for refinement
     """
     config = get_h100_base_config()
     config.attn_config = {
-        'layers': [16, 17, 18, 19, 20, 21, 22, 23],
-        'window_size': 4096,
+        'layers': [8, 9, 10, 11],
+        'window_size': 2048,
         'qkv_bias': False,
         'rope_theta': 10000.0,
     }
