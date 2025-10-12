@@ -14,6 +14,7 @@ from fla.models import DeltaNetConfig, DeltaNetForCausalLM
 def create_gated_deltanet_model(config):
     """
     Create a DeltaNet model using FLA's optimized implementation
+    Supports hybrid models with standard attention layers
     
     Args:
         config: ExperimentConfig with model parameters
@@ -54,6 +55,18 @@ def create_gated_deltanet_model(config):
         pad_token_id=0,
     )
     
+    # Add hybrid attention configuration if specified
+    if hasattr(config, 'attn_config') and config.attn_config is not None:
+        # Set up standard attention layers at specified positions
+        deltanet_config.attn = {
+            'layers': config.attn_config.get('layers', []),
+            'num_heads': config.num_attention_heads,
+            'num_kv_heads': config.attn_config.get('num_kv_heads', config.num_attention_heads),
+            'window_size': config.attn_config.get('window_size', 2048),
+            'qkv_bias': config.attn_config.get('qkv_bias', False),
+            'rope_theta': config.attn_config.get('rope_theta', 10000.0),
+        }
+    
     # Create model using FLA's implementation
     model = DeltaNetForCausalLM(deltanet_config)
     
@@ -86,26 +99,44 @@ def verify_model_architecture(model, config):
     actual_num_layers = len(model.model.layers)
     expected_num_layers = config.num_hidden_layers
     
-    # Verify layer structure
+    # Verify layer structure and identify layer types
     layer_types = []
     all_layers_valid = True
+    deltanet_layers = []
+    attention_layers = []
     
     for i, layer in enumerate(model.model.layers):
-        has_attn = hasattr(layer, 'attn')
         has_mlp = hasattr(layer, 'mlp')
         layer_type = layer.__class__.__name__
+        
+        # Detect the mixer type (DeltaNet or standard Attention)
+        mixer_type = None
+        if hasattr(layer, 'mixer'):
+            mixer = layer.mixer
+            mixer_class = mixer.__class__.__name__
+            if 'DeltaNet' in mixer_class:
+                mixer_type = 'DeltaNet'
+                deltanet_layers.append(i)
+            elif 'Attention' in mixer_class:
+                mixer_type = 'Attention'
+                attention_layers.append(i)
+            else:
+                mixer_type = mixer_class
         
         layer_info = {
             'idx': i,
             'type': layer_type,
-            'has_attn': has_attn,
+            'mixer_type': mixer_type,
             'has_mlp': has_mlp,
-            'valid': has_attn and has_mlp,
+            'valid': mixer_type is not None and has_mlp,
         }
         layer_types.append(layer_info)
         
-        if not (has_attn and has_mlp):
+        if not (mixer_type is not None and has_mlp):
             all_layers_valid = False
+    
+    # Check if model is hybrid
+    is_hybrid = len(attention_layers) > 0 and len(deltanet_layers) > 0
     
     # Overall verification status
     verification_passed = (
@@ -118,10 +149,13 @@ def verify_model_architecture(model, config):
         'verification_passed': verification_passed,
         'model_type': model_class_name,
         'is_deltanet': is_deltanet,
+        'is_hybrid': is_hybrid,
         'num_layers': actual_num_layers,
         'expected_num_layers': expected_num_layers,
         'layers_match': actual_num_layers == expected_num_layers,
         'all_layers_valid': all_layers_valid,
+        'deltanet_layers': deltanet_layers,
+        'attention_layers': attention_layers,
         'layer_types': layer_types,
     }
     
@@ -184,19 +218,31 @@ class GatedDeltaNetWrapper(nn.Module):
         print(f"  Verification: {verification_status}")
         print(f"  Model Type: {arch['model_type']}")
         print(f"  Is DeltaNet: {'✓' if arch['is_deltanet'] else '✗'}")
+        
+        # Show hybrid status
+        if arch.get('is_hybrid', False):
+            print(f"  Model Mode: HYBRID (DeltaNet + Standard Attention)")
+            print(f"  DeltaNet Layers: {len(arch['deltanet_layers'])} layers -> {arch['deltanet_layers']}")
+            print(f"  Attention Layers: {len(arch['attention_layers'])} layers -> {arch['attention_layers']}")
+        else:
+            print(f"  Model Mode: Pure DeltaNet")
+        
         print(f"  Number of layers: {arch['num_layers']} (expected: {arch['expected_num_layers']})")
         
         print("\nLayer Types:")
         for layer_info in arch['layer_types']:
             status = "✓" if layer_info['valid'] else "✗"
-            attn_status = "attn" if layer_info['has_attn'] else "no-attn"
+            mixer = layer_info.get('mixer_type', 'unknown')
             mlp_status = "mlp" if layer_info['has_mlp'] else "no-mlp"
-            print(f"  Layer {layer_info['idx']}: {layer_info['type']} ({attn_status}, {mlp_status}) {status}")
+            print(f"  Layer {layer_info['idx']}: {layer_info['type']} (mixer={mixer}, {mlp_status}) {status}")
         
         print("\nFLA Optimizations:")
         print("  ✓ Fused normalization (RMSNorm)")
         print("  ✓ Fused cross entropy loss")
         print("  ✓ Triton-optimized kernels")
-        print("  ✓ Chunk-based DeltaNet computation")
+        if arch.get('is_hybrid', False):
+            print("  ✓ Hybrid architecture with standard attention layers")
+        else:
+            print("  ✓ Chunk-based DeltaNet computation")
         
         print("="*70)

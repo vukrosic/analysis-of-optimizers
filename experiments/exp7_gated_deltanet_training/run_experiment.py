@@ -1,10 +1,16 @@
 """
-Training script for Gated DeltaNet model
-Experiment 6: Pure Gated DeltaNet training with FLA optimizations
+Training script for Hybrid DeltaNet + Attention model
+Experiment 7: Hybrid architecture with DeltaNet and standard attention layers
 
 Usage:
-    # Start new training
+    # Pure DeltaNet (baseline)
     python run_experiment.py --config rtx4090
+    
+    # Hybrid models
+    python run_experiment.py --config hybrid_alternating
+    python run_experiment.py --config hybrid_sparse
+    python run_experiment.py --config hybrid_last
+    python run_experiment.py --config hybrid_rtx4090
     
     # Resume from checkpoint
     python run_experiment.py --resume checkpoints/best_model.pt
@@ -12,8 +18,8 @@ Usage:
     # Resume and extend training
     python run_experiment.py --resume checkpoints/best_model.pt --extend-steps 5000
     
-    # Available configs: small, medium, large, xlarge, rtx4090
-    python run_experiment.py --config medium
+    # Available configs: small, medium, large, xlarge, rtx4090, 
+    #                    hybrid_alternating, hybrid_sparse, hybrid_last, hybrid_rtx4090, hybrid_h100
 """
 
 import torch
@@ -34,7 +40,7 @@ os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, root_dir)
 
-from experiments.exp6_gated_deltanet_training.config import (
+from experiments.exp7_gated_deltanet_training.config import (
     ExperimentConfig,
     get_small_config,
     get_medium_config,
@@ -45,8 +51,14 @@ from experiments.exp6_gated_deltanet_training.config import (
     get_h100_1k_checkpoint_config,
     get_h100_5k_config,
     get_b200_optimized_config,
+    # Hybrid configurations
+    get_hybrid_config_alternating,
+    get_hybrid_config_sparse_attention,
+    get_hybrid_config_attention_last,
+    get_hybrid_rtx4090_config,
+    get_hybrid_h100_config,
 )
-from experiments.exp6_gated_deltanet_training.models import (
+from experiments.exp7_gated_deltanet_training.models import (
     GatedDeltaNetWrapper,
     count_parameters,
 )
@@ -425,11 +437,12 @@ def main():
     args = parser.parse_args()
     
     print("="*70)
-    print("EXPERIMENT 6: Gated DeltaNet Training with FLA")
+    print("EXPERIMENT 7: Hybrid DeltaNet + Attention Training")
     print("="*70)
     
     # Select configuration based on argument
     config_map = {
+        # Pure DeltaNet configs
         'small': get_small_config,
         'medium': get_medium_config,
         'large': get_large_config,
@@ -439,6 +452,12 @@ def main():
         'h100_1k': get_h100_1k_checkpoint_config,
         'h100_5k': get_h100_5k_config,
         'b200': get_b200_optimized_config,
+        # Hybrid configs (DeltaNet + Standard Attention)
+        'hybrid_alternating': get_hybrid_config_alternating,
+        'hybrid_sparse': get_hybrid_config_sparse_attention,
+        'hybrid_last': get_hybrid_config_attention_last,
+        'hybrid_rtx4090': get_hybrid_rtx4090_config,
+        'hybrid_h100': get_hybrid_h100_config,
     }
     config = config_map[args.config]()
     

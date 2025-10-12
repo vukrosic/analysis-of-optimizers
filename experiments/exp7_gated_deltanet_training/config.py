@@ -25,6 +25,11 @@ class ExperimentConfig:
     hidden_ratio: int = 4  # MLP expansion ratio (intermediate_size = hidden_size * hidden_ratio)
     intermediate_size: Optional[int] = None  # If None, will use hidden_size * hidden_ratio
     
+    # Hybrid Model Configuration
+    # Set to None for pure DeltaNet, or specify layers to use standard attention
+    # Example: {'layers': [3, 7, 11], 'window_size': 2048} for attention on specific layers
+    attn_config: Optional[dict] = None
+    
     # Regularization
     rms_norm_eps: float = 1e-6
     
@@ -293,3 +298,84 @@ def get_b200_optimized_config():
         eval_batches=20,
         log_interval=10,
     )
+
+
+# Hybrid Model Configurations (DeltaNet + Standard Attention)
+
+def get_hybrid_config_alternating():
+    """
+    Hybrid config with alternating DeltaNet and Attention layers
+    Pattern: DeltaNet, Attention, DeltaNet, Attention, ...
+    """
+    config = get_medium_config()
+    # For 8 layers: attention on odd layers [1, 3, 5, 7]
+    config.attn_config = {
+        'layers': [1, 3, 5, 7],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_hybrid_config_sparse_attention():
+    """
+    Hybrid config with sparse attention layers (every 4th layer)
+    Most layers use DeltaNet, with occasional full attention
+    """
+    config = get_medium_config()
+    # For 8 layers: attention on [3, 7] (middle and end)
+    config.attn_config = {
+        'layers': [3, 7],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_hybrid_config_attention_last():
+    """
+    Hybrid config with attention only on last layers
+    Use DeltaNet for early/middle layers, full attention for final layers
+    """
+    config = get_medium_config()
+    # For 8 layers: attention on last 2 layers [6, 7]
+    config.attn_config = {
+        'layers': [6, 7],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_hybrid_rtx4090_config():
+    """
+    Hybrid RTX 4090 config with strategic attention placement
+    DeltaNet for efficiency, attention at key positions for quality
+    """
+    config = get_rtx4090_optimized_config()
+    # For 12 layers: attention on [3, 7, 11] (25%, 58%, 92%)
+    config.attn_config = {
+        'layers': [3, 7, 11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_hybrid_h100_config():
+    """
+    Hybrid H100 config - large scale with strategic attention
+    """
+    config = get_h100_5k_config()
+    # For 12 layers: attention on [5, 11] (middle and end)
+    config.attn_config = {
+        'layers': [5, 11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config

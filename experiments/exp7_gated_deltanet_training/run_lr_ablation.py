@@ -23,9 +23,9 @@ os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, root_dir)
 
-from experiments.exp6_gated_deltanet_training.config import get_rtx4090_optimized_config
-from experiments.exp6_gated_deltanet_training.models import GatedDeltaNetWrapper
-from experiments.exp6_gated_deltanet_training.run_experiment import Trainer
+from experiments.exp7_gated_deltanet_training.config import get_rtx4090_optimized_config
+from experiments.exp7_gated_deltanet_training.models import GatedDeltaNetWrapper
+from experiments.exp7_gated_deltanet_training.run_experiment import Trainer
 from data.loader import load_and_cache_data
 from data.dataset import TextTokenDataset
 from utils.helpers import set_seed
