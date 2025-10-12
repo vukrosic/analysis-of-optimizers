@@ -47,8 +47,8 @@ class ExperimentConfig:
     
     # Data
     max_seq_len: int = 256
-    num_documents: int = 1000
-    max_tokens: int = 2_000_000
+    num_documents: int = 50000
+    max_tokens: int = 100_000_000
     
     # Evaluation
     eval_interval: int = 100

@@ -10,10 +10,10 @@
   },
   "model_info": {
     "parameters": {
-      "total": 188984832,
-      "trainable": 188984832,
-      "total_millions": 188.984832,
-      "trainable_millions": 188.984832
+      "total": 188929344,
+      "trainable": 188929344,
+      "total_millions": 188.929344,
+      "trainable_millions": 188.929344
     },
     "architecture": {
       "verification_passed": false,
@@ -122,14 +122,14 @@
     }
   },
   "results": {
-    "total_time": 570.0768859386444,
-    "best_val_loss": 4.260679927420891,
-    "final_train_loss": 2.560229206085205,
+    "total_time": 388.39312291145325,
+    "best_val_loss": 3.6446442038199534,
+    "final_train_loss": 3.649863910675049,
     "final_val_metrics": {
       "step": 1000,
-      "loss": 4.358521724846967,
-      "accuracy": 0.3128509823409805,
-      "perplexity": 78.14154815673828
+      "loss": 3.6446442038199534,
+      "accuracy": 0.36729594330400783,
+      "perplexity": 38.26915740966797
     }
   }
 }
