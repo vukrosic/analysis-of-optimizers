@@ -102,7 +102,7 @@
       ]
     }
   ],
-  "checkpoint_path": "experiments/exp7_gated_deltanet_training/checkpoints/best_model.pt",
+  "checkpoint_path": "experiments/exp7_hybrid_deltanet_ablation/checkpoints/best_model.pt",
   "model_info": {
     "hidden_size": 768,
     "num_layers": 12,
