@@ -328,7 +328,7 @@ def main():
     # ============================================================================
     # SINGLE SOURCE OF TRUTH - TRAINING CONFIGURATION
     # ============================================================================
-    TRAINING_STEPS = 10  # <-- Change this value to adjust training length
+    TRAINING_STEPS = 300  # <-- Change this value to adjust training length
     
     # Calculate derived values
     warmup_steps = int(TRAINING_STEPS * 0.1)  # 10% warmup
