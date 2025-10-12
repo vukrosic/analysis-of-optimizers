@@ -163,7 +163,7 @@ def get_h100_base_config():
     
     Architecture matches exp6 for stability (proven to work):
     - Same model size: 768 hidden, 12 layers (~60M params)
-    - Optimized batch size: 120 (for ~90% H100 memory utilization)
+    - Reduced batch size: 24 (to fit 302M param GatedDeltaNet model in memory)
     - Sequence length: 1024 (proven stable)
     """
     return ExperimentConfig(
@@ -175,7 +175,7 @@ def get_h100_base_config():
         
         # Sequence and batch configuration - optimized for H100
         max_seq_len=1024,
-        batch_size=120,
+        batch_size=24,  # Reduced from 120 to fit GatedDeltaNet in memory
         
         # Training params - 1000 steps
         max_steps=1000,
@@ -184,10 +184,10 @@ def get_h100_base_config():
         gradient_clip=1.0,
         
         # Data - NO REPETITION for 1000 steps
-        # Tokens needed: 120 batch × 1024 seq × 1000 steps = 122,880,000 (122.9M)
-        # With 2x safety margin = 245,760,000 (245.8M)
+        # Tokens needed: 24 batch × 1024 seq × 1000 steps = 24,576,000 (24.6M)
+        # With 2x safety margin = 49,152,000 (49.2M)
         num_documents=50_000,
-        max_tokens=200_000_000,  # 200M tokens (1.6x safety margin)
+        max_tokens=50_000_000,  # 50M tokens (2x safety margin)
         
         # Evaluation settings
         eval_interval=50,

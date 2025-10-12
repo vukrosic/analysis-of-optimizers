@@ -6,8 +6,8 @@ Tests 3 learning rates for each of 3 architectures:
 - Hybrid Sparse (h100_hybrid_sparse - 17% attention)
 
 Architecture: Uses exp6's proven stable config
-- hidden_size=768, num_layers=12, batch_size=120, seq_len=1024
-- ~60M params, avoids Triton kernel memory issues
+- hidden_size=768, num_layers=12, batch_size=24, seq_len=1024
+- ~302M params GatedDeltaNet model (larger due to vocab_size)
 
 Learning rates tested: 5e-4, 1e-3, 2e-3
 
@@ -224,11 +224,11 @@ def main():
     
     # Ablation configuration - short runs to find optimal LR
     # Using 200 steps like the RTX 4090 ablation
-    ablation_steps = 200
-    warmup_steps = 20  # 10% warmup
-    eval_interval = 40
+    ablation_steps = 20
+    warmup_steps = 2  # 10% warmup
+    eval_interval = 4
     log_interval = 10
-    save_interval = 200
+    save_interval = 20
     
     print(f"\nAblation Configuration:")
     print(f"  Steps: {ablation_steps}")
@@ -254,12 +254,12 @@ def main():
     base_config.save_interval = save_interval
     
     # Calculate tokens needed for no repetition:
-    # H100: batch_size=120, max_seq_len=1024 (matching exp6 architecture)
-    # Tokens per step = 120 × 1024 = 122,880
-    # For 200 steps: 122,880 × 200 = 24,576,000 tokens (~24.6M)
-    # With 2x safety margin = 49,152,000 (~49.2M)
-    base_config.num_documents = 60_000
-    base_config.max_tokens = 50_000_000  # 50M tokens for 200 steps (2x margin)
+    # H100: batch_size=24, max_seq_len=1024 (reduced for 302M param model)
+    # Tokens per step = 24 × 1024 = 24,576
+    # For 200 steps: 24,576 × 200 = 4,915,200 tokens (~4.9M)
+    # With 2x safety margin = 9,830,400 (~9.8M)
+    base_config.num_documents = 20_000
+    base_config.max_tokens = 10_000_000  # 10M tokens for 200 steps (2x margin)
     
     print(f"Batch size: {base_config.batch_size}")
     print(f"Seq length: {base_config.max_seq_len}")
@@ -412,9 +412,9 @@ def main():
             'ablation_steps': ablation_steps,
             'hidden_size': base_config.hidden_size,  # 768
             'num_layers': base_config.num_hidden_layers,  # 12
-            'batch_size': base_config.batch_size,  # 120
+            'batch_size': base_config.batch_size,  # 24 (reduced for 302M param model)
             'max_seq_len': base_config.max_seq_len,  # 1024
-            'note': 'Architecture matches exp6 for stability (proven to work)',
+            'note': 'Architecture matches exp6 for stability, batch_size reduced for GatedDeltaNet memory',
         },
         'architectures_tested': [name for name, _, _ in architectures],
         'learning_rates_tested': learning_rates,
