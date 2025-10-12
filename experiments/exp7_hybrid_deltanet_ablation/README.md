@@ -1,6 +1,8 @@
 # Experiment 7: Hybrid DeltaNet Architecture Ablation (H100)
 
-Comprehensive ablation study testing 13 architectures (0-100% attention) to find the optimal DeltaNet/Attention hybrid ratio for language modeling.
+Ablation study testing 13 architectures (0-100% attention) to find the optimal DeltaNet/Attention hybrid ratio for language modeling.
+
+Experiments are not exhaustive, but there is a strong base to continue experimentation.
 
 ---
 
