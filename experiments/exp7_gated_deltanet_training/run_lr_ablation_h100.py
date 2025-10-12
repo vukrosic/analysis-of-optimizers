@@ -6,7 +6,7 @@ Tests 3 learning rates for each of 3 architectures:
 - Hybrid Sparse (h100_hybrid_sparse - 17% attention)
 
 Architecture: Uses exp6's proven stable config
-- hidden_size=768, num_layers=12, batch_size=24, seq_len=1024
+- hidden_size=768, num_layers=12, batch_size=48, seq_len=1024
 - ~302M params GatedDeltaNet model (larger due to vocab_size)
 
 Learning rates tested: 5e-4, 1e-3, 2e-3
@@ -254,7 +254,7 @@ def main():
     base_config.save_interval = save_interval
     
     # Calculate tokens needed for no repetition:
-    # H100: batch_size=24, max_seq_len=1024 (reduced for 302M param model)
+    # H100: batch_size=48, max_seq_len=1024 (reduced for 302M param model)
     # Tokens per step = 24 × 1024 = 24,576
     # For 200 steps: 24,576 × 200 = 4,915,200 tokens (~4.9M)
     # With 2x safety margin = 9,830,400 (~9.8M)
