@@ -16,97 +16,100 @@
       "trainable_millions": 188.984832
     },
     "architecture": {
-      "verification_passed": true,
+      "verification_passed": false,
       "model_type": "DeltaNetForCausalLM",
       "is_deltanet": true,
+      "is_hybrid": false,
       "num_layers": 12,
       "expected_num_layers": 12,
       "layers_match": true,
-      "all_layers_valid": true,
+      "all_layers_valid": false,
+      "deltanet_layers": [],
+      "attention_layers": [],
       "layer_types": [
         {
           "idx": 0,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 1,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 2,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 3,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 4,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 5,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 6,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 7,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 8,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 9,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 10,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         },
         {
           "idx": 11,
           "type": "DeltaNetBlock",
-          "has_attn": true,
+          "mixer_type": null,
           "has_mlp": true,
-          "valid": true
+          "valid": false
         }
       ]
     },
@@ -119,14 +122,14 @@
     }
   },
   "results": {
-    "total_time": 432.5719563961029,
-    "best_val_loss": 4.252543032738859,
-    "final_train_loss": 2.535521936416626,
+    "total_time": 570.0768859386444,
+    "best_val_loss": 4.260679927420891,
+    "final_train_loss": 2.560229206085205,
     "final_val_metrics": {
       "step": 1000,
-      "loss": 4.361583924890746,
-      "accuracy": 0.312006349310368,
-      "perplexity": 78.38117218017578
+      "loss": 4.358521724846967,
+      "accuracy": 0.3128509823409805,
+      "perplexity": 78.14154815673828
     }
   }
 }

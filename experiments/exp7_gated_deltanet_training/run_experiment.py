@@ -1,25 +1,16 @@
 """
 Training script for Hybrid DeltaNet + Attention model
-Experiment 7: Hybrid architecture with DeltaNet and standard attention layers
+Experiment 7: RTX 4090 Hybrid architecture with DeltaNet and standard attention layers
 
 Usage:
-    # Pure DeltaNet (baseline)
-    python run_experiment.py --config rtx4090
-    
-    # Hybrid models
-    python run_experiment.py --config hybrid_alternating
-    python run_experiment.py --config hybrid_sparse
-    python run_experiment.py --config hybrid_last
-    python run_experiment.py --config hybrid_rtx4090
+    # Default - Hybrid RTX 4090 model
+    python run_experiment.py
     
     # Resume from checkpoint
     python run_experiment.py --resume checkpoints/best_model.pt
     
     # Resume and extend training
     python run_experiment.py --resume checkpoints/best_model.pt --extend-steps 5000
-    
-    # Available configs: small, medium, large, xlarge, rtx4090, 
-    #                    hybrid_alternating, hybrid_sparse, hybrid_last, hybrid_rtx4090, hybrid_h100
 """
 
 import torch
@@ -42,21 +33,7 @@ sys.path.insert(0, root_dir)
 
 from experiments.exp7_gated_deltanet_training.config import (
     ExperimentConfig,
-    get_small_config,
-    get_medium_config,
-    get_large_config,
-    get_xlarge_config,
-    get_rtx4090_optimized_config,
-    get_h100_optimized_config,
-    get_h100_1k_checkpoint_config,
-    get_h100_5k_config,
-    get_b200_optimized_config,
-    # Hybrid configurations
-    get_hybrid_config_alternating,
-    get_hybrid_config_sparse_attention,
-    get_hybrid_config_attention_last,
     get_hybrid_rtx4090_config,
-    get_hybrid_h100_config,
 )
 from experiments.exp7_gated_deltanet_training.models import (
     GatedDeltaNetWrapper,
@@ -426,40 +403,19 @@ def plot_training_curves(train_history, val_history, save_path):
 def main():
     """Main experiment function"""
     # Parse command-line arguments
-    parser = argparse.ArgumentParser(description='Train Gated DeltaNet model')
+    parser = argparse.ArgumentParser(description='Train Hybrid RTX 4090 DeltaNet model')
     parser.add_argument('--resume', type=str, default=None, 
                         help='Path to checkpoint to resume from (e.g., checkpoints/best_model.pt)')
-    parser.add_argument('--config', type=str, default='rtx4090',
-                        choices=['small', 'medium', 'large', 'xlarge', 'rtx4090', 'h100', 'h100_1k', 'h100_5k', 'b200'],
-                        help='Model configuration size')
     parser.add_argument('--extend-steps', type=int, default=None,
                         help='Extend training to this many total steps (useful when resuming)')
     args = parser.parse_args()
     
     print("="*70)
-    print("EXPERIMENT 7: Hybrid DeltaNet + Attention Training")
+    print("EXPERIMENT 7: Hybrid RTX 4090 DeltaNet + Attention Training")
     print("="*70)
     
-    # Select configuration based on argument
-    config_map = {
-        # Pure DeltaNet configs
-        'small': get_small_config,
-        'medium': get_medium_config,
-        'large': get_large_config,
-        'xlarge': get_xlarge_config,
-        'rtx4090': get_rtx4090_optimized_config,
-        'h100': get_h100_optimized_config,
-        'h100_1k': get_h100_1k_checkpoint_config,
-        'h100_5k': get_h100_5k_config,
-        'b200': get_b200_optimized_config,
-        # Hybrid configs (DeltaNet + Standard Attention)
-        'hybrid_alternating': get_hybrid_config_alternating,
-        'hybrid_sparse': get_hybrid_config_sparse_attention,
-        'hybrid_last': get_hybrid_config_attention_last,
-        'hybrid_rtx4090': get_hybrid_rtx4090_config,
-        'hybrid_h100': get_hybrid_h100_config,
-    }
-    config = config_map[args.config]()
+    # Use the hybrid RTX 4090 configuration
+    config = get_hybrid_rtx4090_config()
     
     set_seed(config.seed)
     device = torch.device(config.device if torch.cuda.is_available() else 'cpu')
