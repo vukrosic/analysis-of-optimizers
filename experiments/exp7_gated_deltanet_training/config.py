@@ -277,6 +277,102 @@ def get_h100_hybrid_late():
     return config
 
 
+def get_h100_hybrid_8():
+    """Hybrid 8% attention - 1/12 layers: [11] (last layer only)"""
+    config = get_h100_base_config()
+    config.attn_config = {
+        'layers': [11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_h100_hybrid_25():
+    """Hybrid 25% attention - 3/12 layers: [4, 8, 11] (evenly spread)"""
+    config = get_h100_base_config()
+    config.attn_config = {
+        'layers': [4, 8, 11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_h100_hybrid_42():
+    """Hybrid 42% attention - 5/12 layers: [2, 4, 6, 8, 11]"""
+    config = get_h100_base_config()
+    config.attn_config = {
+        'layers': [2, 4, 6, 8, 11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_h100_hybrid_58():
+    """Hybrid 58% attention - 7/12 layers: [1, 3, 5, 7, 8, 9, 11]"""
+    config = get_h100_base_config()
+    config.attn_config = {
+        'layers': [1, 3, 5, 7, 8, 9, 11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_h100_hybrid_67():
+    """Hybrid 67% attention - 8/12 layers: [1, 2, 4, 5, 7, 8, 10, 11]"""
+    config = get_h100_base_config()
+    config.attn_config = {
+        'layers': [1, 2, 4, 5, 7, 8, 10, 11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_h100_hybrid_75():
+    """Hybrid 75% attention - 9/12 layers: [1, 2, 3, 5, 6, 7, 9, 10, 11]"""
+    config = get_h100_base_config()
+    config.attn_config = {
+        'layers': [1, 2, 3, 5, 6, 7, 9, 10, 11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_h100_hybrid_83():
+    """Hybrid 83% attention - 10/12 layers: [1, 2, 3, 4, 5, 6, 7, 8, 10, 11]"""
+    config = get_h100_base_config()
+    config.attn_config = {
+        'layers': [1, 2, 3, 4, 5, 6, 7, 8, 10, 11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
+def get_h100_hybrid_92():
+    """Hybrid 92% attention - 11/12 layers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] (all but first)"""
+    config = get_h100_base_config()
+    config.attn_config = {
+        'layers': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        'window_size': 2048,
+        'qkv_bias': False,
+        'rope_theta': 10000.0,
+    }
+    return config
+
+
 # Legacy aliases for backward compatibility
 get_h100_optimized_config = get_h100_base_config
 get_hybrid_h100_config = get_h100_hybrid_sparse

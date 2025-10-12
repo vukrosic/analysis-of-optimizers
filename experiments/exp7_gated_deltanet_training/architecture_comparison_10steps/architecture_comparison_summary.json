@@ -1,0 +1,92 @@
+{
+  "config": {
+    "training_steps": 10,
+    "hidden_size": 768,
+    "num_layers": 12,
+    "batch_size": 48,
+    "max_seq_len": 1024,
+    "total_tokens_processed": 491520
+  },
+  "architectures_tested": 5,
+  "total_training_time_minutes": 1.0984968225161234,
+  "results": [
+    {
+      "rank": 1,
+      "architecture": "Hybrid Late 33%",
+      "attention_percentage": 33.3,
+      "learning_rate": 0.002,
+      "best_val_loss": 7.605210624389052,
+      "final_val_loss": 7.605210624389052,
+      "final_val_accuracy": 0.08340562886933854,
+      "final_val_perplexity": 2008.63525390625,
+      "training_time_minutes": 0.17965775330861408,
+      "tokens_processed": 491520,
+      "throughput_tokens_per_sec": 45597.809441198304
+    },
+    {
+      "rank": 2,
+      "architecture": "Hybrid Alternating 50%",
+      "attention_percentage": 50.0,
+      "learning_rate": 0.002,
+      "best_val_loss": 7.671302474722019,
+      "final_val_loss": 7.671302474722019,
+      "final_val_accuracy": 0.07231386445096122,
+      "final_val_perplexity": 2145.874267578125,
+      "training_time_minutes": 0.161208442846934,
+      "tokens_processed": 491520,
+      "throughput_tokens_per_sec": 50816.197063439366
+    },
+    {
+      "rank": 3,
+      "architecture": "Hybrid Sparse 17%",
+      "attention_percentage": 16.7,
+      "learning_rate": 0.002,
+      "best_val_loss": 7.672227583929008,
+      "final_val_loss": 7.672227583929008,
+      "final_val_accuracy": 0.08122861681329423,
+      "final_val_perplexity": 2147.860107421875,
+      "training_time_minutes": 0.2011296590169271,
+      "tokens_processed": 491520,
+      "throughput_tokens_per_sec": 40729.94525044444
+    },
+    {
+      "rank": 4,
+      "architecture": "Full Transformer",
+      "attention_percentage": 100.0,
+      "learning_rate": 0.002,
+      "best_val_loss": 7.731225037038734,
+      "final_val_loss": 7.731225037038734,
+      "final_val_accuracy": 0.049090705441511895,
+      "final_val_perplexity": 2278.3916015625,
+      "training_time_minutes": 0.104826819896698,
+      "tokens_processed": 491520,
+      "throughput_tokens_per_sec": 78147.93969780671
+    },
+    {
+      "rank": 5,
+      "architecture": "Full DeltaNet",
+      "attention_percentage": 0.0,
+      "learning_rate": 0.001,
+      "best_val_loss": 7.807791045217803,
+      "final_val_loss": 7.807791045217803,
+      "final_val_accuracy": 0.08219086021505376,
+      "final_val_perplexity": 2459.691650390625,
+      "training_time_minutes": 0.2700432856877645,
+      "tokens_processed": 491520,
+      "throughput_tokens_per_sec": 30335.87737290361
+    }
+  ],
+  "winner": {
+    "architecture": "Hybrid Late 33%",
+    "attention_percentage": 33.3,
+    "best_val_loss": 7.605210624389052,
+    "improvement_over_second": 0.8615466610884975
+  },
+  "insights": {
+    "fastest_architecture": "Full Transformer",
+    "slowest_architecture": "Full DeltaNet",
+    "speed_range_multiplier": 2.5760896491363536,
+    "best_quality_architecture": "Hybrid Late 33%",
+    "best_efficiency": "Full Transformer"
+  }
+}
