@@ -84,9 +84,9 @@ def get_rtx4090_optimized_config():
         num_attention_heads=12,
         hidden_ratio=4,
         
-        # Longer sequences and large batch for GPU saturation
+        # Reduced batch size to fit GatedDeltaNet in memory (larger than DeltaNet)
         max_seq_len=1024,
-        batch_size=32,
+        batch_size=16,  # Reduced from 32 to 16 for GatedDeltaNet
         
         # Training params - 1000 steps
         max_steps=1000,
@@ -95,11 +95,11 @@ def get_rtx4090_optimized_config():
         gradient_clip=1.0,
         
         # Data - NO REPETITION for 1000 steps
-        # Tokens needed: 32 batch × 1024 seq × 1000 steps = 32,768,000 (32.8M)
-        # With 2x safety margin = 65,536,000 (65.5M)
-        # At ~750 tokens per document (3000 chars), need ~93,000 documents for 70M tokens
-        num_documents=100_000,  # Increased from 10k to ensure sufficient unique data
-        max_tokens=70_000_000,  # 70M tokens (2x safety margin)
+        # Tokens needed: 16 batch × 1024 seq × 1000 steps = 16,384,000 (16.4M)
+        # With 2x safety margin = 32,768,000 (32.8M)
+        # At ~750 tokens per document (3000 chars), need ~50,000 documents for 35M tokens
+        num_documents=100_000,  # More than enough to ensure sufficient unique data
+        max_tokens=70_000_000,  # 70M tokens (4x safety margin)
         
         # Evaluation settings
         eval_interval=50,
