@@ -328,7 +328,7 @@ def main():
             train_loader, val_loader = create_progressive_loaders(
                 train_tokens, val_tokens,
                 config.max_seq_len, config.batch_size,
-                train_data_state=None, val_data_state=None
+                train_state=None, val_state=None
             )
             
             # Run experiment
