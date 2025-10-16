@@ -38,6 +38,7 @@ Fork this repository, create a new experiment in `experiments/` folder, then cre
 
 ### [Exp5: Batch Size vs Sequence Length](experiments/exp5_batch_vs_seqlen_ablation/)
 - **Researcher**: Vuk Rosić ([YouTube](https://www.youtube.com/channel/UC7XJj9pv_11a11FUxCMz15g), [GitHub](https://github.com/vukrosic))
+- **Validated Tag**: `git checkout experiments-v2.0`
 - **Research Question**: Should you use big batches with short sequences, or small batches with long sequences?
 - **Key Findings**: A balanced approach to batch size and sequence length (e.g., 26x1024) is most effective. It outperforms both large batches with short sequences and small batches with long sequences. While large batches may seem to train faster, longer sequences ultimately provide better learning.
 - **Tutorials**: [📺 Video](https://youtu.be/bu5dhaLmr7E), [📝 Article](https://opensuperintelligencelab.com/learn/large-language-models/batch-size-vs-sequence-length/)
