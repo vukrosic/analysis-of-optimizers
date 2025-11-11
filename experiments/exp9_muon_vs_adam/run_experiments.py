@@ -6,9 +6,13 @@ import json
 import time
 import sys
 import os
+import random
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+
+# Fix tokenizer parallelism warning when using DataLoader workers
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # Add project root and exp9 to path (project_root last so it's checked first)
 script_dir = Path(__file__).resolve().parent
@@ -52,6 +56,7 @@ def prepare_data(config: MoEModelConfig):
     
     # Take samples and split into train/val
     raw_samples = list(raw_dataset.take(data_cfg.num_samples))
+    random.shuffle(raw_samples)
     num_val = int(len(raw_samples) * 0.1)
     num_train = len(raw_samples) - num_val
     
@@ -223,13 +228,19 @@ def compare_experiments(results: dict, output_dir: str = "."):
     muon_exps = [d for d in comparison_data if 'muon' in d['optimizer_type']]
     adam_exps = [d for d in comparison_data if d['optimizer_type'] == 'adam']
     
-    if muon_exps and adam_exps:
+    # Initialize to None in case one category is missing
+    best_muon = None
+    best_adam = None
+    
+    if muon_exps:
         best_muon = min(muon_exps, key=lambda x: x['best_loss'])
-        best_adam = min(adam_exps, key=lambda x: x['best_loss'])
-        
         print(f"\n🏆 Best Muon: {best_muon['name']} (loss: {best_muon['best_loss']:.4f})")
+    
+    if adam_exps:
+        best_adam = min(adam_exps, key=lambda x: x['best_loss'])
         print(f"🏆 Best Adam: {best_adam['name']} (loss: {best_adam['best_loss']:.4f})")
-        
+    
+    if muon_exps and adam_exps:
         improvement = ((best_adam['best_loss'] - best_muon['best_loss']) / best_adam['best_loss']) * 100
         if improvement > 0:
             print(f"\n✨ Muon is better by {improvement:.2f}%")
@@ -318,8 +329,8 @@ def compare_experiments(results: dict, output_dir: str = "."):
         json.dump({
             'experiments': comparison_data,
             'best_experiment': min(comparison_data, key=lambda x: x['best_loss'])['name'],
-            'best_muon': best_muon['name'] if muon_exps else None,
-            'best_adam': best_adam['name'] if adam_exps else None,
+            'best_muon': best_muon['name'] if best_muon else None,
+            'best_adam': best_adam['name'] if best_adam else None,
         }, f, indent=2, default=str)
     print(f"📁 Comparison summary saved to {comparison_file}")
 
