@@ -4,7 +4,7 @@
 
 ---
 
-**Author:** [Your Name]  
+**Author:** Vuk Rosić  
 **Advisor:** [Advisor Name]  
 **Date:** November 2025  
 **Department:** Computer Science  
@@ -18,9 +18,9 @@ This thesis presents a comprehensive empirical study comparing the Muon optimize
 
 Our key findings demonstrate that Muon achieves 7% better validation loss (5.16 vs 5.55) compared to fully-optimized Adam at 500 training steps, with an even more pronounced 15% improvement (5.72 vs 6.73) at early training stages (200 steps). Critically, we discover that Muon exhibits substantially different optimization dynamics than Adam: it requires learning rates 70× higher (0.07 vs 0.001), tolerates a 30× wider range of learning rates, benefits from cosine learning rate schedules while Adam prefers constant rates, and requires warmup while Adam performs better without it.
 
-Through extensive ablation studies, we identify that Muon's optimal configuration uses momentum of 0.9, weight decay of 0.2, and cosine learning rate decay with 5% warmup. For Adam, we find that constant learning rates without warmup yield superior results, contradicting common practices. Our Newton-Schulz iteration analysis reveals that 3 steps provide comparable quality to 5 steps while offering 40% computational savings.
+Through extensive ablation studies, we identify that Muon's optimal configuration uses momentum of 0.9, weight decay of 0.2, and cosine learning rate decay with 5% warmup. For Adam, we find that constant learning rates without warmup yield superior results for our setup, contradicting common practices. Our Newton-Schulz iteration analysis reveals that 3 steps provide comparable quality to 5 steps while offering 40% computational savings.
 
-These results establish Muon as a superior optimizer for MoE transformer training, offering not only better final performance but also greater robustness to hyperparameter selection and faster early-stage convergence. This work provides practical guidelines for practitioners deploying large-scale MoE models and contributes to the growing understanding of second-order optimization methods in deep learning.
+These results establish Muon as a superior optimizer for MoE transformer training, offering not only better final performance but also greater robustness to hyperparameter selection and faster early-stage convergence. This work provides practical guidelines for practitioners deploying micro-scale MoE models and contributes to the growing understanding of second-order optimization methods in deep learning.
 
 **Keywords:** Neural Network Optimization, Mixture-of-Experts, Transformer Models, Muon Optimizer, Adam Optimizer, Hyperparameter Tuning, Newton-Schulz Orthogonalization
 
@@ -28,7 +28,7 @@ These results establish Muon as a superior optimizer for MoE transformer trainin
 
 ## Acknowledgments
 
-I would like to express my sincere gratitude to my advisor [Advisor Name] for their guidance and support throughout this research. I am grateful to [Lab/Research Group] for providing computational resources. Special thanks to the developers of the Muon optimizer and the open-source machine learning community for making this research possible.
+I would like to express my sincere gratitude to my advisor [Advisor Name] for their guidance and support throughout this research. Special thanks to the developers of the Muon optimizer and the open-source machine learning community for making this research possible.
 
 ---
 
