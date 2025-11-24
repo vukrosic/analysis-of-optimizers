@@ -1,6 +1,4 @@
-# Comparative Analysis of Muon and Adam Optimizers for Training Mixture-of-Experts Transformer Models
-
-**A Thesis Submitted in Partial Fulfillment of the Requirements for the Degree of Master of Science in Computer Science**
+# Analysis and Design of Novel Optimizers for Neural Networks
 
 ---
 
