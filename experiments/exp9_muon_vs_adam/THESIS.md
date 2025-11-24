@@ -4,8 +4,7 @@
 
 **Author:** Vuk Rosić  
 **Advisor:** [Advisor Name]  
-**Date:** November 2025  
-**Department:** Computer Science  
+**Date:** November 2025   
 **Institution:** [Your University]
 
 ---
@@ -278,8 +277,6 @@ The following principles are adhered to:
 #### 3.2.1 Primary Metrics
 
 **Validation Loss**: Cross-entropy loss on held-out validation data, measured at regular intervals throughout training. This serves as the primary metric for model quality.
-
-**Training Loss**: Cross-entropy loss on training data, used to monitor overfitting and convergence behavior.
 
 **Validation Accuracy**: Token-level accuracy on validation data, providing an interpretable performance measure.
 
@@ -818,25 +815,6 @@ With fixed random seeds, consistent improvements are observed across multiple ch
 
 **Interpretation**:
 Muon's advantage is most pronounced in early training, suggesting better gradient conditioning leads to faster initial convergence. The advantage persists through convergence, indicating not just faster training but better final solutions.
-
-#### 5.3.4 Computational Efficiency
-
-**Per-Step Time**:
-- Muon: 0.234 sec/step (500 steps)
-- Adam: 0.216 sec/step (500 steps)
-- **Overhead: 8.3%**
-
-**Newton-Schulz Overhead**:
-- With NS=5: 8.3% overhead
-- With NS=3: ~4% overhead (estimated)
-
-**Time-to-Accuracy**:
-To reach 5.8 validation loss:
-- Muon: ~50 steps (11.7 seconds)
-- Adam: ~150 steps (32.4 seconds)
-- **Muon is 2.8× faster** to reach this milestone
-
-This demonstrates that despite slightly higher per-step cost, Muon's better convergence leads to faster time-to-accuracy for practical training scenarios.
 
 ### 5.4 Robustness Analysis
 
