@@ -12,7 +12,7 @@
 
 ## Abstract
 
-This thesis presents a comprehensive empirical study comparing the Muon optimizer (Momentum Orthogonalized by Newton-Schulz) against the widely-used Adam optimizer for training Mixture-of-Experts (MoE) transformer models. Through systematic hyperparameter optimization spanning 45+ experiments, optimal configurations for both optimizers are identified, and a fair performance comparison is provided. This systematic analysis reveals fundamental design principles for neural network optimizers, particularly regarding the interplay between learning rates, momentum, and second-order curvature information.
+This thesis presents a comprehensive empirical study comparing the Muon optimizer (Momentum Orthogonalized by Newton-Schulz) against the widely-used Adam optimizer for training Mixture-of-Experts (MoE) transformer models. This work also analyzes the design philosophy of novel optimizers and employs systematic ablations to deconstruct their behavior, providing insights into the optimizer design process itself. Through systematic hyperparameter optimization spanning 45+ experiments, optimal configurations for both optimizers are identified, and a fair performance comparison is provided. This systematic analysis reveals fundamental design principles for neural network optimizers, particularly regarding the interplay between learning rates, momentum, and second-order curvature information.
 
 Key findings demonstrate that Muon achieves 7% better validation loss (5.16 vs 5.55) compared to fully-optimized Adam at 500 training steps, with an even more pronounced 15% improvement (5.72 vs 6.73) at early training stages (200 steps). Critically, it is discovered that Muon exhibits substantially different optimization dynamics than Adam: it requires learning rates 70× higher (0.07 vs 0.001), tolerates a 30× wider range of learning rates, benefits from cosine learning rate schedules while Adam prefers constant rates, and requires warmup while Adam performs better without it.
 
@@ -1148,7 +1148,9 @@ This work contributes:
 
 ### 6.6 Theoretical Insights
 
-#### 6.6.1 Connection to Natural Gradient
+## 6.6 Theoretical Insights and Design Philosophy
+
+### 6.6.1 Connection to Natural Gradient
 
 Muon's orthogonalization can be viewed as approximating natural gradient descent:
 - Natural gradient uses Fisher information matrix
@@ -1160,19 +1162,29 @@ This theoretical grounding explains:
 - Why convergence is faster (closer to Newton's method)
 - Why robustness improves (less sensitivity to scale)
 
-#### 6.6.2 Adaptive vs. Orthogonal
+### 6.6.2 Adaptive vs. Orthogonal Philosophies
 
-Adam and Muon represent different philosophies:
+Adam and Muon represent two distinct design philosophies for handling ill-conditioned curvature:
 
-**Adam (Adaptive)**:
-- Adapt step sizes per parameter
-- Based on gradient statistics (mean, variance)
-- Diagonal scaling (efficient but limited)
+**The Adaptive Philosophy (Adam)**:
+- **Assumption**: Parameters are independent scalars.
+- **Mechanism**: Scale each parameter's update inversely to its gradient variance.
+- **Goal**: Equalize the effective learning rate across parameters.
+- **Limitation**: Ignores correlations between parameters (diagonal approximation).
 
-**Muon (Orthogonal)**:
-- Adapt gradient directions
-- Based on gradient geometry (orthogonalization)
-- Full-matrix preconditioning (approximated)
+**The Orthogonal Philosophy (Muon)**:
+- **Assumption**: Parameters form structured matrices/tensors.
+- **Mechanism**: Constrain the update matrix to be isometric (orthogonal).
+- **Goal**: Equalize the update magnitude across all directions in the parameter space.
+- **Advantage**: Respects the underlying geometry of linear transformations.
+
+### 6.6.3 The Shift to Structure-Awareness
+
+The experimental results of this thesis support a fundamental shift in optimizer design philosophy: moving from **element-wise adaptivity** to **structure-aware conditioning**.
+
+1.  **Geometry Matters**: The 7-15% performance gap confirms that treating weight matrices as flat vectors (Adam) discards critical structural information. Muon's success validates the philosophy that the optimizer should "know" it is optimizing a matrix, not just a list of numbers.
+
+2.  **Constraint vs. Penalty**: Traditional weight decay acts as a soft penalty. Muon's orthogonalization acts as a hard geometric constraint on the update. The results suggest that hard constraints on update geometry (forcing orthogonality) are more effective for training stability than soft penalties, allowing for much more aggressive learning rates (70x higher).
 
 These are complementary approaches. Hybrid configurations combining both (as used in this study) may capture benefits of each.
 
@@ -1186,15 +1198,19 @@ Based on the comparative analysis of Muon and Adam, and the broader history of o
 
 **1. Respect Parameter Geometry**
 Treating all parameters as flat vectors (as Adam does) ignores the rich structural information in weight matrices. Novel optimizers should distinguish between different parameter types (e.g., 2D weights vs. 1D biases) and apply transformations appropriate to their geometry. Muon's success with matrix orthogonalization demonstrates the power of this approach.
+*Empirical Connection*: The primary comparison (Section 5.3) showed that Muon, which respects the 2D geometry of attention and feed-forward matrices, outperformed the geometry-agnostic Adam by 7-15%, validating that structural priors are critical for MoE transformers.
 
 **2. The "Orthogonalization" Principle**
 Adaptive methods (Adam) scale updates by magnitude, while orthogonal methods (Muon) condition updates by direction. The superior performance of Muon suggests that *conditioning the update direction* to be orthogonal or whitened is often more effective than simply scaling the step size. Future optimizers should explore efficient approximations of whitening transformations (like Newton-Schulz) rather than just variance-based scaling.
+*Empirical Connection*: The momentum ablation (Section 5.2.1) revealed that Muon prefers lower momentum (0.9) than typically used with SGD. This suggests that the orthogonalization process itself provides sufficient directional consistency, reducing the reliance on heavy momentum smoothing for stability.
 
 **3. Decouple Update Magnitude from Direction**
 A robust optimizer should separate the determination of the update *direction* (gradient processing) from the update *magnitude* (learning rate scheduling). Muon's requirement for a schedule and warmup, unlike Adam's preference for constant rates, indicates that when the direction is well-conditioned (orthogonalized), the magnitude must be carefully managed to exploit this conditioning.
+*Empirical Connection*: The schedule ablations (Section 5.2.6) demonstrated that Muon requires a cosine schedule and warmup to manage the magnitude of its orthogonalized updates, whereas Adam performs best with a constant LR. This confirms that better directional conditioning (Muon) shifts the burden of stability to the learning rate schedule.
 
 **4. Computational "Sweet Spot"**
 Pure second-order methods (Newton's method) are O(n³) and infeasible. First-order methods (SGD) are O(n) but require many steps. The design goal is to find operations that are O(n) or slightly super-linear but provide "second-order-like" benefits. Muon's Newton-Schulz iteration is a prime example: a small constant number of matrix multiplications (O(n)) yields a high-quality approximation of a complex operation.
+*Empirical Connection*: The Newton-Schulz ablation (Section 5.2.3) showed that reducing iterations from 5 to 3 maintained model quality (5.19 loss) while reducing computational overhead. This identifies the specific "sweet spot" where the cost of structure-awareness is outweighed by its convergence benefits (2.8x faster time-to-accuracy).
 
 ### 6.7.2 Research Methodology for New Optimizers
 
