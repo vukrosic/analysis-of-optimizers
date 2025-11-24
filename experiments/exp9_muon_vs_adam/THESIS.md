@@ -12,13 +12,13 @@
 
 ## Abstract
 
-This thesis presents a comprehensive empirical study comparing the Muon optimizer (Momentum Orthogonalized by Newton-Schulz) against the widely-used Adam optimizer for training Mixture-of-Experts (MoE) transformer models. Through systematic hyperparameter optimization spanning 45+ experiments, optimal configurations for both optimizers are identified, and a fair performance comparison is provided.
+This thesis presents a comprehensive empirical study comparing the Muon optimizer (Momentum Orthogonalized by Newton-Schulz) against the widely-used Adam optimizer for training Mixture-of-Experts (MoE) transformer models. Through systematic hyperparameter optimization spanning 45+ experiments, optimal configurations for both optimizers are identified, and a fair performance comparison is provided. This systematic analysis reveals fundamental design principles for neural network optimizers, particularly regarding the interplay between learning rates, momentum, and second-order curvature information.
 
 Key findings demonstrate that Muon achieves 7% better validation loss (5.16 vs 5.55) compared to fully-optimized Adam at 500 training steps, with an even more pronounced 15% improvement (5.72 vs 6.73) at early training stages (200 steps). Critically, it is discovered that Muon exhibits substantially different optimization dynamics than Adam: it requires learning rates 70× higher (0.07 vs 0.001), tolerates a 30× wider range of learning rates, benefits from cosine learning rate schedules while Adam prefers constant rates, and requires warmup while Adam performs better without it.
 
 Through extensive ablation studies, Muon's optimal configuration is identified to use momentum of 0.9, weight decay of 0.2, and cosine learning rate decay with 5% warmup. For Adam, it is found that constant learning rates without warmup yield superior results for the experimental setup, contradicting common practices. Newton-Schulz iteration analysis reveals that 3 steps provide comparable quality to 5 steps while offering 40% computational savings.
 
-These results establish Muon as a superior optimizer for MoE transformer training, offering not only better final performance but also greater robustness to hyperparameter selection and faster early-stage convergence. This work provides practical guidelines for practitioners deploying micro-scale MoE models and contributes to the growing understanding of second-order optimization methods in deep learning.
+These results establish Muon as a superior optimizer for MoE transformer training, offering not only better final performance but also greater robustness to hyperparameter selection and faster early-stage convergence. Beyond empirical comparison, this work derives key design principles for optimizer development: the importance of gradient orthogonalization for robustness, the trade-off between second-order information and computational overhead, and the distinct scheduling requirements of different optimizer classes. This work provides practical guidelines for practitioners deploying micro-scale MoE models and contributes to the growing understanding of second-order optimization methods in deep learning.
 
 **Keywords:** Neural Network Optimization, Mixture-of-Experts, Transformer Models, Muon Optimizer, Adam Optimizer, Hyperparameter Tuning, Newton-Schulz Orthogonalization
 
@@ -51,7 +51,7 @@ I would like to express my sincere gratitude to my advisor [Advisor Name] for th
 
 The optimization algorithm is a fundamental component of deep learning systems, directly influencing training efficiency, convergence speed, and final model quality. While Adam (Adaptive Moment Estimation) [Kingma & Ba, 2015] has become the de facto standard optimizer for training neural networks due to its adaptive learning rates and robust performance across diverse architectures, recent years have seen the emergence of novel optimization methods that challenge this dominance.
 
-The Muon optimizer (Momentum Orthogonalized by Newton-Schulz) represents a new class of optimizers that leverage second-order information through Newton-Schulz iterations for gradient orthogonalization [Malladi et al., 2024]. Unlike traditional second-order methods that require expensive Hessian computations, Muon achieves computational efficiency through approximate orthogonalization while potentially offering superior convergence properties.
+The Muon optimizer (Momentum Orthogonalized by Newton-Schulz) represents a novel design that leverages second-order information through Newton-Schulz iterations for gradient orthogonalization [Malladi et al., 2024]. Unlike traditional second-order methods that require expensive Hessian computations, Muon achieves computational efficiency through approximate orthogonalization while potentially offering superior convergence properties. Understanding the design choices behind Muon—particularly its gradient orthogonalization mechanism—provides valuable insights for optimizer development.
 
 Mixture-of-Experts (MoE) models [Shazeer et al., 2017; Fedus et al., 2022] present unique optimization challenges due to their sparse activation patterns, routing mechanisms, and load balancing requirements. The interaction between routing dynamics and optimizer behavior remains understudied, making MoE models an ideal testbed for comparing optimization algorithms.
 
@@ -81,11 +81,13 @@ This thesis makes the following contributions:
 
 3. **Optimization Dynamics Analysis**: Fundamental differences in how Muon and Adam optimize neural networks are identified, including learning rate requirements, schedule preferences, and warmup behavior.
 
-4. **Practical Guidelines**: Concrete, actionable recommendations are provided for practitioners, including optimal hyperparameters and efficiency improvements.
+4. **Optimizer Design Insights**: Key design principles are extracted from the empirical analysis, providing guidelines for developing neural network optimizers, particularly regarding the balance between first- and second-order methods.
 
-5. **MoE-Specific Insights**: This work contributes to the understanding of optimizer behavior in the context of sparse MoE models.
+5. **Practical Guidelines**: Concrete, actionable recommendations are provided for practitioners, including optimal hyperparameters and efficiency improvements.
 
-6. **Open-Source Implementation**: All experimental code, configurations, and results are released for reproducibility.
+6. **MoE-Specific Insights**: This work contributes to the understanding of optimizer behavior in the context of sparse MoE models.
+
+7. **Open-Source Implementation**: All experimental code, configurations, and results are released for reproducibility.
 
 ### 1.4 Thesis Organization
 
