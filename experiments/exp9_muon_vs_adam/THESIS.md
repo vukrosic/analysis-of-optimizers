@@ -1419,7 +1419,7 @@ Loshchilov, I., & Hutter, F. (2019). Decoupled weight decay regularization. In *
 
 Luo, L., Xiong, Y., Liu, Y., & Sun, X. (2019). Adaptive gradient methods with dynamic bound of learning rate. In *International Conference on Learning Representations*.
 
-Malladi, S., Gao, S., & Arora, S. (2024). Muon: Momentum orthogonalized by Newton-Schulz. *arXiv preprint arXiv:2402.xxxxx*.
+Jordan, K., Jin, Y., Boza, V., You, J., Cesista, F., Newhouse, L., & Bernstein, J. (2024). Muon: An optimizer for hidden layers in neural networks. *Blog post*. Retrieved from https://kellerjordan.github.io/posts/muon/
 
 Martens, J., & Grosse, R. (2015). Optimizing neural networks with Kronecker-factored approximate curvature. In *International Conference on Machine Learning* (pp. 2408-2417). PMLR.
 
@@ -1701,7 +1701,7 @@ Accelerate: 0.20.3
 
 **Mixture-of-Experts (MoE)**: Architecture with multiple specialized sub-networks (experts)
 
-**Muon**: Momentum Orthogonalized by Newton-schulz optimizer
+**Muon**: Momentum Orthogonalized by Newton-Schulz optimizer
 
 **Newton-Schulz Iteration**: Efficient method for approximating matrix inverse/orthogonalization
 
@@ -1726,7 +1726,7 @@ Accelerate: 0.20.3
 All code, configurations, and results from this thesis are available at:
 
 ```
-Repository: /root/blueberry-llm/experiments/exp9_muon_vs_adam/
+Repository: /https://github.com/Open-Superintelligence-Lab/blueberry-llm/experiments/exp9_muon_vs_adam/
 ```
 
 Key files:
