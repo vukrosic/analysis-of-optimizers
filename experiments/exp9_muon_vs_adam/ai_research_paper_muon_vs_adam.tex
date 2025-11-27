@@ -28,11 +28,7 @@
 \maketitle
 
 \begin{abstract}
-This paper presents a comprehensive empirical study comparing the Muon optimizer (Momentum Orthogonalized by Newton-Schulz) against the widely-used Adam optimizer for training Mixture-of-Experts (MoE) transformer models. This work also analyzes the design philosophy of novel optimizers and employs systematic ablations to deconstruct their behavior, providing insights into the optimizer design process itself. Through systematic hyperparameter optimization spanning 45+ experiments, optimal configurations for both optimizers are identified, and a fair performance comparison is provided. This systematic analysis reveals fundamental design principles for neural network optimizers, particularly regarding the interplay between learning rates, momentum, and second-order curvature information.
-
-Key findings demonstrate that Muon achieves 7\% better validation loss (5.16 vs 5.55) compared to fully-optimized Adam at 500 training steps, with an even more pronounced 15\% improvement (5.72 vs 6.73) at early training stages (200 steps). Critically, it is discovered that Muon exhibits substantially different optimization dynamics than Adam: it requires learning rates 70$\times$ higher (0.07 vs 0.001), tolerates a 30$\times$ wider range of learning rates, benefits from cosine learning rate schedules while Adam prefers constant rates, and requires warmup while Adam performs better without it.
-
-Through extensive ablation studies, Muon's optimal configuration is identified to use momentum of 0.9, weight decay of 0.2, and cosine learning rate decay with 5\% warmup. For Adam, it is found that constant learning rates without warmup yield superior results for the experimental setup, contradicting common practices. Newton-Schulz iteration analysis reveals that 3 steps provide comparable quality to 5 steps while offering 40\% computational savings. These results establish Muon as a superior optimizer for MoE transformer training, offering not only better final performance but also greater robustness to hyperparameter selection and faster early-stage convergence. Beyond empirical comparison, this work derives key design principles for optimizer development: the importance of gradient orthogonalization for robustness, the trade-off between second-order information and computational overhead, and the distinct scheduling requirements of different optimizer classes.
+This paper presents a comprehensive empirical study comparing the Muon optimizer against Adam for training Mixture-of-Experts (MoE) transformer models. Through 45+ systematic experiments, we identify optimal configurations and analyze the design philosophy of novel optimizers. Key findings demonstrate that Muon achieves 7\% better validation loss (5.16 vs 5.55) compared to optimized Adam at 500 steps, with a 15\% improvement (5.72 vs 6.73) in early training. Muon exhibits distinct dynamics, requiring learning rates 70$\times$ higher (0.07 vs 0.001) and tolerating a 30$\times$ wider range. Ablation studies reveal Muon's preference for cosine schedules and warmup, whereas Adam performs best with constant rates. Additionally, we find that 3 Newton-Schulz iterations suffice for Muon, offering 40\% computational savings. These results establish Muon as a superior and more robust optimizer for MoE training, highlighting the importance of gradient orthogonalization.
 \end{abstract}
 
 \section{Introduction}
@@ -105,6 +101,13 @@ We use the HuggingFaceTB/smollm-corpus (cosmopedia-v2 subset), tokenized with GP
 \textbf{Adam}: Optimal LR is \textbf{0.001}. The sweet spot is narrow (0.0007-0.002).
 \textbf{Comparison}: Muon requires 70$\times$ higher learning rates and tolerates a 30$\times$ wider range.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{adam_optimization_results/comparison_plot.png}
+    \caption{Adam Optimization Results: Comparison of different learning rates and schedules.}
+    \label{fig:adam_optimization}
+\end{figure}
+
 \subsection{Hyperparameter Ablations}
 \begin{itemize}
     \item \textbf{Momentum (Muon)}: Lower momentum (0.9) outperforms higher (0.99).
@@ -113,6 +116,13 @@ We use the HuggingFaceTB/smollm-corpus (cosmopedia-v2 subset), tokenized with GP
     \item \textbf{Warmup}: Muon requires warmup (5\% optimal); Adam performs better without it.
     \item \textbf{Schedule}: Muon benefits from Cosine decay; Adam prefers Constant LR in this setting.
 \end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{optimal_muon_suite_results/comparison_plot.png}
+    \caption{Muon Ablation Results: Impact of momentum, weight decay, and schedule variations.}
+    \label{fig:muon_ablation}
+\end{figure}
 
 \subsection{Final Optimized Comparison}
 Table \ref{tab:final_comparison} summarizes the final comparison between optimized Muon and Adam.
@@ -132,6 +142,13 @@ LR Tolerance & 0.02-0.09 & 0.0007-0.002 & $\sim$30$\times$ wider \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comparison_plot.png}
+    \caption{Final Comparison: Validation loss curves for optimized Muon vs. optimized Adam.}
+    \label{fig:final_comparison}
+\end{figure}
 
 Muon demonstrates superior performance, particularly in early training, and significantly greater robustness to hyperparameter selection.
 
