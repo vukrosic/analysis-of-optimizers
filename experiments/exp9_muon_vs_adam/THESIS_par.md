@@ -46,35 +46,35 @@ Because of their sparse activation patterns, routing methods, and load balancing
 
 This thesis focuses on the following research questions:
 
-1. **Performance Comparison**: How does Muon do vs Adam in terms of final validation loss while developing MoE transformer models?
+1. How does Muon do vs Adam in terms of final validation loss while developing MoE transformer models?
 
-2. **Hyperparameter Sensitivity**: What are the best hyperparameters for each optimizer, and how responsive are they to hyperparameter changes?
+2. What are the best hyperparameters for each optimizer, and how responsive are they to hyperparameter changes?
 
-3. **Learning Rate Dynamics**: How do Muon and Adam's learning rate requirements differ, and what does this tell us about their respective optimization paths?
+3. How do Muon and Adam's learning rate requirements differ, and what does this tell us about their respective optimization paths?
 
-4. **Schedule and Warmup**: Do Muon and Adam respond differently to learning rate schedules and warmup strategies?
+4. Do Muon and Adam respond differently to learning rate schedules and warmup strategies?
 
-5. **Computational Efficiency**: What is the computational overhead of Muon's Newton-Schulz iterations, and can it be reduced without compromising quality?
+5. What is the computational overhead of Muon's Newton-Schulz iterations, and can it be reduced without compromising quality?
 
-6. **Practical Guidelines**: What are the suggested configurations for practitioners using these optimizers in production?
+6. What are the suggested configurations for practitioners using these optimizers in production?
 
 ### 1.3 Contributions
 
 This thesis makes the following contributions:
 
-1. **Comprehensive Empirical Study**: This study conducts 45+ systematic experiments exploring the hyperparameter spaces of both Muon and Adam optimizers, providing one of the most extensive comparisons to date.
+1. This study conducts 45+ systematic experiments exploring the hyperparameter spaces of both Muon and Adam optimizers, providing one of the most extensive comparisons to date.
 
-2. **Fair Comparison Methodology**: Unlike prior work that may compare default configurations, both optimizers are optimized independently to ensure fair comparison.
+2. Unlike prior work that may compare default configurations, both optimizers are optimized independently to ensure fair comparison.
 
-3. **Optimization Dynamics Analysis**: Fundamental differences in how Muon and Adam optimize neural networks are identified, including learning rate requirements, schedule preferences, and warmup behavior.
+3. Fundamental differences in how Muon and Adam optimize neural networks are identified, including learning rate requirements, schedule preferences, and warmup behavior.
 
-4. **Optimizer Design Insights**: Key design principles are extracted from the empirical analysis, providing guidelines for developing neural network optimizers, particularly regarding the balance between first- and second-order methods.
+4. Key design principles are extracted from the empirical analysis, providing guidelines for developing neural network optimizers, particularly regarding the balance between first- and second-order methods.
 
-5. **Practical Guidelines**: Concrete, actionable recommendations are provided for practitioners, including optimal hyperparameters and efficiency improvements.
+5. Concrete, actionable recommendations are provided for practitioners, including optimal hyperparameters and efficiency improvements.
 
-6. **MoE-Specific Insights**: This work contributes to the understanding of optimizer behavior in the context of sparse MoE models.
+6. This work contributes to the understanding of optimizer behavior in the context of sparse MoE models.
 
-7. **Open-Source Implementation**: All experimental code, configurations, and results are released for reproducibility.
+7. All experimental code, configurations, and results are released for reproducibility.
 
 ### 1.4 Thesis Organization
 
