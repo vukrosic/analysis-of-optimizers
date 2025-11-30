@@ -1,6 +1,6 @@
 # Analysis of Optimizers - Bachelor's Thesis Project
 
-**Vuk Rosić** - Comparative Analysis of Muon and Adam Optimizers for Training Large Language Models
+**Vuk Rosić**
 
 ## About This Thesis
 
