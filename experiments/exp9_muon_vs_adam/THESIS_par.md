@@ -901,331 +901,31 @@ Both optimizers maintain balanced expert utilization (load balancing loss effect
 
 ### 6.1 Why Does Muon Outperform Adam?
 
-#### 6.1.1 Gradient Conditioning Through Orthogonalization
-
-The fundamental advantage of Muon lies in its gradient orthogonalization through Newton-Schulz iterations. This provides better-conditioned updates compared to Adam's adaptive learning rates.
-
-**Theoretical Perspective**:
-- Adam adapts learning rates based on second moment estimates (diagonal preconditioning)
-- Muon orthogonalizes gradients, approximating natural gradient directions
-- Orthogonalization provides full-matrix preconditioning (approximated efficiently)
-- This leads to better-conditioned optimization landscapes
-
-**Empirical Evidence**:
-- Faster early convergence (15% better at 200 steps)
-- Better final solutions (7% better at 500 steps)
-- Higher learning rates possible (70× higher)
-
-The orthogonalization effectively "straightens out" the optimization trajectory, allowing larger steps without instability.
-
-#### 6.1.2 Learning Rate Dynamics
-
-Muon's ability to use 70× higher learning rates is not merely a hyperparameter difference—it reflects fundamentally different optimization dynamics.
-
-**Higher Learning Rates Enable**:
-- Faster exploration of parameter space
-- Larger updates per step
-- Better escape from poor local minima
-- Faster convergence to good solutions
-
-**Why Muon Tolerates High LRs**:
-- Orthogonalized gradients are better behaved
-- Update directions are more aligned with true descent directions
-- Natural gradient interpretation provides theoretical justification
-
-This suggests Muon is operating in a different regime than Adam, closer to second-order methods in behavior despite first-order computational cost.
-
-#### 6.1.3 MoE-Specific Advantages
-
-For Mixture-of-Experts models specifically:
-
-**Routing Stability**: Better gradient conditioning may help stabilize routing decisions during early training, leading to better expert specialization.
-
-**Expert Utilization**: Both optimizers maintain balanced expert usage, but Muon may lead to better expert quality (as evidenced by lower loss).
-
-**Sparse Gradient Handling**: MoE models have sparse activation patterns. Muon's orthogonalization may better handle the non-uniform gradient statistics this creates.
+Muon's superior performance stems from its use of **Newton-Schulz iterations** to orthogonalize gradients, providing better-conditioned updates than Adam's adaptive learning rates. This orthogonalization approximates natural gradient descent, effectively "straightening" the optimization trajectory. This allows Muon to utilize learning rates **70× higher** than Adam (0.07 vs 0.001), leading to faster convergence (15% better at 200 steps) and better final solutions (7% better at 500 steps). For Mixture-of-Experts (MoE) models, this conditioning appears to stabilize routing and handle sparse gradient statistics more effectively than Adam.
 
 ### 6.2 Optimization Dynamics Differences
 
-#### 6.2.1 Schedule Preferences
-
-**Muon Benefits from Cosine Decay**:
-- With schedule: 5.19 loss
-- Without schedule: 5.25 loss (2.4% worse)
-
-**Adam Prefers Constant LR**:
-- With constant: 5.55 loss
-- With schedule: 5.75 loss (3.6% worse)
-
-**Interpretation**:
-- Muon's high initial LR benefits from gradual decay
-- Adam's lower LR is already conservative; reducing it further hurts
-- The optimal operating points differ fundamentally
-
-This suggests practitioners should not assume schedule/warmup practices transfer between optimizers.
-
-#### 6.2.2 Warmup Requirements
-
-**Muon Requires Warmup**:
-- With warmup: 5.19 loss
-- Without warmup: 5.58 loss (7.5% worse)
-
-**Adam Works Better Without Warmup**:
-- Without warmup: 5.59 loss
-- With warmup: 5.75 loss (2.9% worse)
-
-**Interpretation**:
-- Muon's high LR needs gradual ramp-up to avoid early instability
-- Adam's low LR is already conservative enough for immediate full use
-- Different optimization dynamics require different initialization strategies
-
-#### 6.2.3 Momentum Behavior
-
-**Muon Prefers Lower Momentum** (0.9 optimal):
-- Momentum 0.9: 5.19 loss
-- Momentum 0.99: 5.31 loss (2.4% worse)
-
-This counterintuitive result suggests:
-- Orthogonalization already provides directional consistency
-- High momentum may interfere with adaptive orthogonalization
-- Lower momentum allows more responsive updates
-
-For Adam (default β₁=0.9), higher momentum is standard. The difference may relate to how momentum interacts with the different update rules.
+Our experiments reveal fundamental differences in how these optimizers behave:
+*   **Schedules**: Muon benefits significantly from cosine decay (5.19 vs 5.25 loss), while Adam performs best with a constant learning rate.
+*   **Warmup**: Muon requires warmup (5% optimal) to manage its high initial learning rates, whereas Adam works better without it.
+*   **Momentum**: Counterintuitively, Muon prefers lower momentum (0.9) than typically used, suggesting that orthogonalization provides sufficient directional consistency.
 
 ### 6.3 Practical Implications
 
-#### 6.3.1 Hyperparameter Tuning Effort
+*   **Tuning**: Muon is far more robust, with a **30× wider** workable learning rate range (0.02-0.09) compared to Adam's narrow sweet spot. This makes it ideal for scenarios with limited tuning budgets.
+*   **Efficiency**: While Muon incurs an 8% per-step overhead, it reaches quality milestones **2.8× faster**. Using 3 Newton-Schulz iterations instead of 5 reduces overhead to ~4% with no quality loss.
+*   **Recommendation**: Use Muon for large-scale training and MoE models where convergence speed and robustness are critical. Use Adam when computational budgets are tight or for well-understood domains.
 
-**For Muon**:
-- Wider LR tolerance (30×) makes tuning easier
-- More forgiving to suboptimal choices
-- Can start with LR=0.07 and adjust if needed
-- Fewer iterations required to find good settings
+### 6.4 Theoretical Insights and Design Philosophy
 
-**For Adam**:
-- Narrow LR tolerance requires careful tuning
-- Performance degrades rapidly outside small range
-- May require more extensive search
-- Default LR=0.001 is reasonable starting point
+The results support a shift from **element-wise adaptivity** (Adam) to **structure-aware conditioning** (Muon). Adam treats parameters as independent scalars, ignoring correlations. Muon respects the matrix geometry of weights, applying hard orthogonalization constraints. This "structure-awareness" allows for more aggressive optimization. Future optimizer designs should focus on:
+1.  **Respecting Parameter Geometry**: Distinguishing between matrices and vectors.
+2.  **Orthogonalization**: Conditioning update direction is often more effective than scaling magnitude.
+3.  **Decoupling**: Separating update direction (gradient processing) from magnitude (scheduling).
 
-**Recommendation**: Muon's robustness makes it more practical for scenarios where extensive hyperparameter search is infeasible.
+### 6.5 Limitations
 
-#### 6.3.2 Computational Considerations
-
-**Training Time**:
-- Muon: 8% slower per step
-- But 2.8× faster to reach quality thresholds
-- Overall wall-clock advantage in practice
-
-**Memory Usage**:
-- Newton-Schulz iterations require temporary buffers
-- Memory overhead is modest (O(d) for d-dimensional tensors)
-- Not a limiting factor for practical deployment
-
-**Production Deployment**:
-- Use NS=3 instead of 5 for 15% speedup
-- No quality loss observed
-- Brings per-step overhead to ~4%
-
-#### 6.3.3 When to Use Each Optimizer
-
-**Use Muon When**:
-- Training large models (benefits from better conditioning)
-- Limited hyperparameter search budget (robust to LR)
-- Want faster convergence (higher LR possible)
-- Working with MoE models (demonstrated advantage)
-- Can afford 4-8% computational overhead
-
-**Use Adam When**:
-- Computational budget is extremely tight
-- Default settings work well (some domains)
-- Existing infrastructure optimized for Adam
-- Risk-averse deployment (Adam is well-understood)
-
-**Use Both (Hybrid)**:
-- Muon for high-dimensional parameters (attention, FFN)
-- Adam for low-dimensional (embeddings, norms)
-- This is the configuration found to be optimal
-
-### 6.4 Limitations and Threats to Validity
-
-#### 6.4.1 Experimental Limitations
-
-**Single Random Seed**:
-- All experiments use seed=42 for reproducibility
-- Cannot assess variance across random initializations
-- Results may not generalize to different seeds
-- **Mitigation**: Consistency across many experiments increases confidence
-
-**Limited Training Duration**:
-- Most experiments: 500 steps
-- Longer training (10,000+ steps) not tested
-- Relative performance may shift at scale
-- **Mitigation**: Trends at 200 vs 500 steps are consistent
-
-**Single Architecture**:
-- Tested on one MoE transformer configuration
-- Results may not transfer to other architectures
-- **Mitigation**: MoE models are representative of important model class
-
-**Single Domain**:
-- Language modeling on cosmopedia-v2
-- Other domains (vision, RL) not tested
-- **Mitigation**: Language modeling is widely studied domain
-
-#### 6.4.2 Methodological Considerations
-
-**Hyperparameter Search Completeness**:
-- Tested major hyperparameters but not all combinations
-- Interaction effects not fully explored
-- May exist better configurations not discovered
-- **Mitigation**: Systematic ablation methodology reduces this risk
-
-**Evaluation Metrics**:
-- Focus on validation loss as primary metric
-- Downstream task performance not evaluated
-- Loss improvements may not translate to task improvements
-- **Mitigation**: Loss is standard proxy for language model quality
-
-**Statistical Testing**:
-- Deterministic results preclude statistical tests
-- Cannot compute p-values or confidence intervals
-- **Mitigation**: Effect sizes are large (7-15% improvements)
-
-#### 6.4.3 Generalization Concerns
-
-**Model Scale**:
-- 79M parameters is relatively small
-- Results may differ for billion+ parameter models
-- Computational tradeoffs may shift at scale
-
-**Hardware Specifics**:
-- Single GPU training
-- Distributed training dynamics not studied
-- Communication overhead may affect relative performance
-
-**Dataset Size**:
-- 1,800 training documents is modest
-- Larger datasets may show different convergence patterns
-- Overfitting risks differ at scale
-
-### 6.5 Comparison to Prior Work
-
-#### 6.5.1 Muon Evaluations
-
-The results align with original Muon paper [Malladi et al., 2024]:
-- Confirms advantages over Adam
-- Demonstrates robustness to hyperparameters
-- Shows higher optimal learning rates
-
-Contributions of this work:
-- First comprehensive comparison on MoE models
-- Systematic hyperparameter optimization for both optimizers
-- Identification of schedule/warmup differences
-- Newton-Schulz iteration efficiency analysis
-
-#### 6.5.2 Adam Optimization Literature
-
-The finding that Adam prefers constant LR (for this setup) contrasts with common practice:
-- Cosine schedules are standard [Loshchilov & Hutter, 2017]
-- Warmup is typically beneficial [Goyal et al., 2017]
-
-Possible explanations:
-- Short training duration (500 steps)
-- Specific model/dataset combination
-- Interaction with MoE routing dynamics
-
-This highlights the importance of task-specific tuning rather than assuming universal best practices.
-
-#### 6.5.3 MoE Optimization
-
-Prior work on MoE optimization [Fedus et al., 2022; Lepikhin et al., 2021] focuses primarily on:
-- Load balancing mechanisms
-- Routing strategies
-- Stability improvements
-
-This work contributes:
-- First systematic optimizer comparison for MoE
-- Demonstrates both optimizers maintain stable routing
-- Shows Muon advantages extend to sparse models
-
-### 6.6 Theoretical Insights
-
-## 6.6 Theoretical Insights and Design Philosophy
-
-### 6.6.1 Connection to Natural Gradient
-
-Muon's orthogonalization can be viewed as approximating natural gradient descent:
-- Natural gradient uses Fisher information matrix
-- Orthogonalization approximates whitening transform
-- Both aim to remove ill-conditioning
-
-This theoretical grounding explains:
-- Why higher LRs are possible (better-conditioned updates)
-- Why convergence is faster (closer to Newton's method)
-- Why robustness improves (less sensitivity to scale)
-
-### 6.6.2 Adaptive vs. Orthogonal Philosophies
-
-Adam and Muon represent two distinct design philosophies for handling ill-conditioned curvature:
-
-**The Adaptive Philosophy (Adam)**:
-- **Assumption**: Parameters are independent scalars.
-- **Mechanism**: Scale each parameter's update inversely to its gradient variance.
-- **Goal**: Equalize the effective learning rate across parameters.
-- **Limitation**: Ignores correlations between parameters (diagonal approximation).
-
-**The Orthogonal Philosophy (Muon)**:
-- **Assumption**: Parameters form structured matrices/tensors.
-- **Mechanism**: Constrain the update matrix to be isometric (orthogonal).
-- **Goal**: Equalize the update magnitude across all directions in the parameter space.
-- **Advantage**: Respects the underlying geometry of linear transformations.
-
-### 6.6.3 The Shift to Structure-Awareness
-
-The experimental results of this thesis support a fundamental shift in optimizer design philosophy: moving from **element-wise adaptivity** to **structure-aware conditioning**.
-
-1.  **Geometry Matters**: The 7-15% performance gap confirms that treating weight matrices as flat vectors (Adam) discards critical structural information. Muon's success validates the philosophy that the optimizer should "know" it is optimizing a matrix, not just a list of numbers.
-
-2.  **Constraint vs. Penalty**: Traditional weight decay acts as a soft penalty. Muon's orthogonalization acts as a hard geometric constraint on the update. The results suggest that hard constraints on update geometry (forcing orthogonality) are more effective for training stability than soft penalties, allowing for much more aggressive learning rates (70x higher).
-
-These are complementary approaches. Hybrid configurations combining both (as used in this study) may capture benefits of each.
-
----
-
-## 6.7 Principles for Designing Novel Optimizers
-
-Based on the comparative analysis of Muon and Adam, and the broader history of optimizer development, this section synthesizes key principles and guidelines for researchers designing the next generation of neural network optimizers.
-
-### 6.7.1 Design Guidelines
-
-**1. Respect Parameter Geometry**
-Treating all parameters as flat vectors (as Adam does) ignores the rich structural information in weight matrices. Novel optimizers should distinguish between different parameter types (e.g., 2D weights vs. 1D biases) and apply transformations appropriate to their geometry. Muon's success with matrix orthogonalization demonstrates the power of this approach.
-*Empirical Connection*: The primary comparison (Section 5.3) showed that Muon, which respects the 2D geometry of attention and feed-forward matrices, outperformed the geometry-agnostic Adam by 7-15%, validating that structural priors are critical for MoE transformers.
-
-**2. The "Orthogonalization" Principle**
-Adaptive methods (Adam) scale updates by magnitude, while orthogonal methods (Muon) condition updates by direction. The superior performance of Muon suggests that *conditioning the update direction* to be orthogonal or whitened is often more effective than simply scaling the step size. Future optimizers should explore efficient approximations of whitening transformations (like Newton-Schulz) rather than just variance-based scaling.
-*Empirical Connection*: The momentum ablation (Section 5.2.1) revealed that Muon prefers lower momentum (0.9) than typically used with SGD. This suggests that the orthogonalization process itself provides sufficient directional consistency, reducing the reliance on heavy momentum smoothing for stability.
-
-**3. Decouple Update Magnitude from Direction**
-A robust optimizer should separate the determination of the update *direction* (gradient processing) from the update *magnitude* (learning rate scheduling). Muon's requirement for a schedule and warmup, unlike Adam's preference for constant rates, indicates that when the direction is well-conditioned (orthogonalized), the magnitude must be carefully managed to exploit this conditioning.
-*Empirical Connection*: The schedule ablations (Section 5.2.6) demonstrated that Muon requires a cosine schedule and warmup to manage the magnitude of its orthogonalized updates, whereas Adam performs best with a constant LR. This confirms that better directional conditioning (Muon) shifts the burden of stability to the learning rate schedule.
-
-**4. Computational "Sweet Spot"**
-Pure second-order methods (Newton's method) are O(n³) and infeasible. First-order methods (SGD) are O(n) but require many steps. The design goal is to find operations that are O(n) or slightly super-linear but provide "second-order-like" benefits. Muon's Newton-Schulz iteration is a prime example: a small constant number of matrix multiplications (O(n)) yields a high-quality approximation of a complex operation.
-*Empirical Connection*: The Newton-Schulz ablation (Section 5.2.3) showed that reducing iterations from 5 to 3 maintained model quality (5.19 loss) while reducing computational overhead. This identifies the specific "sweet spot" where the cost of structure-awareness is outweighed by its convergence benefits (2.8x faster time-to-accuracy).
-
-### 6.7.2 Research Methodology for New Optimizers
-
-**1. Theoretical Grounding**: Start with a clear hypothesis about the loss landscape (e.g., "gradients are ill-conditioned in this specific way"). Derive the update rule from first principles (e.g., natural gradient, trust region) rather than heuristics.
-
-**2. Toy Problem Validation**: Validate the optimizer on simple, controllable problems (e.g., Rosenbrock function, small XOR networks) to verify it behaves as theoretically predicted before scaling up.
-
-**3. Systematic Ablation**: When a new optimizer works, rigorously ablate every component. Is the improvement due to the novel update rule, or just a better default learning rate? (As seen with Lion, sometimes the sign operation alone is sufficient).
-
-**4. Robustness Profiling**: Do not just report the best result. Report the *range* of hyperparameters under which the optimizer performs well. A method that is 1% better but requires 100x more tuning effort is not a practical contribution.
-
-**5. Scale Testing**: Optimization dynamics change with scale. A method that works for ResNet-50 may fail for a 7B LLM. Test on the largest scale feasible, or at least on architectures (like MoE) known to be challenging.
+Key limitations include the use of a single random seed, a relatively small model scale (79M parameters), and a focus on language modeling. While effect sizes are large, multi-seed replication and scaling to billion-parameter models are necessary to fully generalize these findings.
 
 ---
 
@@ -1478,12 +1178,6 @@ Zoph, B., Bello, I., Kumar, S., Du, N., Huang, Y., Dean, J., ... & Le, Q. V. (20
 **Warmup**: Gradual increase of learning rate at training start
 
 **Weight Decay**: Regularization technique penalizing large weights
-
----
-
-**End of Thesis**
-
-*Total Word Count: ~15,000 words*
 
 ---
 
