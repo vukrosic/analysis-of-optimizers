@@ -1,95 +1,111 @@
-# Blueberry LLM
+# Analysis of Optimizers - Bachelor's Thesis Project
 
-**Open Superintelligence Lab** - Open research for everyone. We publish all of our research for the sake of accelerating science. Learn real AI research from a real research lab.
+**Vuk Rosić** - Comparative Analysis of Muon and Adam Optimizers for Training Large Language Models
+
+## About This Thesis
+
+This repository contains the research and experiments for my master's thesis, which compares the **Muon optimizer** and **Adam optimizer** for training large language models and neural networks. The thesis examines novel optimizers' design philosophy and breaks down their behavior through systematic ablations.
+
+### Research Objectives
+
+Through methodical hyperparameter optimization across more than 45 tests, this research:
+
+- **Identifies optimal configurations** for both Muon and Adam optimizers
+- **Reveals fundamental design principles** about the interaction between learning rates, momentum, and second-order curvature information
+- **Analyzes Newton-Schulz iteration efficiency** for computational optimization
+- **Develops key design concepts** beyond empirical comparison, highlighting the significance of gradient orthogonalization and unique scheduling needs
+
+### Key Findings
+
+**Muon Optimizer's Optimal Configuration:**
+- Momentum: 0.9
+- Weight decay: 0.2
+- Learning rate schedule: Cosine decay
+
+**Newton-Schulz Iteration Analysis:**
+- 3 steps yield **40% computational savings** while maintaining quality similar to 5 iterations
+
+**Main Conclusion:**
+The findings demonstrate Muon's superiority as an optimizer for MoE (Mixture of Experts) transformer training, providing quicker convergence and increased robustness compared to Adam.
+
+## Primary Experiment: exp9 - Muon vs Adam
+
+The core of this thesis is **Experiment 9**, which provides a comprehensive comparison between Muon and Adam optimizers. This experiment includes:
+
+- Extensive hyperparameter sweeps for both optimizers
+- Performance analysis across multiple metrics (loss, convergence speed, robustness)
+- Computational efficiency comparisons
+- Ablation studies on key optimizer components
+
+📁 **Main experiment location**: `experiments/exp9_muon_vs_adam/`
 
 ## Quick Start
 
 ```bash
 pip install -r requirements.txt
 
+# Run the main Muon vs Adam comparison
 python train_moe.py
 ```
 
-## About
+## Repository Structure
 
-Purpose of this repository is to research better, faster, smarter LLMs.
+- **`experiments/`** - All experimental results, with exp9 being the primary thesis experiment
+- **`experiments/exp9_muon_vs_adam/`** - Main thesis experiment comparing Muon and Adam
+- **`experiments/ai_research_paper.tex`** - Thesis LaTeX document
+- **`models/`** - Model architectures (MoE transformers)
+- **`training/`** - Training scripts and optimizer implementations
+- **`configs/`** - Configuration files for experiments
 
-This repository contains cutting-edge language model experiments and architectures. We believe scientists do their best work when given freedom to explore, so this is a space for your independent research and discovery.
+## Other Experiments
 
-Fork this repository, create a new experiment in `experiments/` folder, then create a pull request to merge it back.
-
-## Experiments
-
-> Some of the experiments below are validated on a specific git tag. 
-> Later commits may introduce breaking changes. 
-> If experiment includes *Validated Tag* field, it may still run, but if it doesn't, use: `git checkout <tag-name>`
-> 
-> **Latest stable tag**: `experiments-v2.0` (for Exp6-8)
-
-*Your experiments will be added here*
+While this repository's primary focus is the Muon vs Adam comparison (exp9), it also contains additional experiments from earlier research stages:
 
 ### [Exp7: Hybrid DeltaNet Architecture Ablation](experiments/exp7_hybrid_deltanet_ablation/)
-- **Validated Tag**: `git checkout experiments-v2.0`
-- Comprehensive ablation of 13 architectures (0-100% attention) finding that Hybrid Sparse 17% (2 attention layers at positions 5, 11) performs 27% better than pure Transformer and 8% better than pure DeltaNet.
+- Comprehensive ablation of 13 architectures finding optimal attention layer distribution
 
 ### [Exp6: Gated DeltaNet Training](experiments/exp6_gated_deltanet_training/)
-- **Validated Tag**: `git checkout experiments-v2.0`
-- Learning rate ablation study for Gated DeltaNet architecture, finding 1e-3 optimal for 188M parameter model. Also possible to train coherent LLM in 30-60 min on H100.
+- Learning rate ablation study for Gated DeltaNet architecture
 
 ### [Exp5: Batch Size vs Sequence Length](experiments/exp5_batch_vs_seqlen_ablation/)
-- **Researcher**: Vuk Rosić ([YouTube](https://www.youtube.com/channel/UC7XJj9pv_11a11FUxCMz15g), [GitHub](https://github.com/vukrosic))
-- **Validated Tag**: `git checkout experiments-v2.0`
-- **Research Question**: Should you use big batches with short sequences, or small batches with long sequences?
-- **Key Findings**: A balanced approach to batch size and sequence length (e.g., 26x1024) is most effective. It outperforms both large batches with short sequences and small batches with long sequences. While large batches may seem to train faster, longer sequences ultimately provide better learning.
-- **Tutorials**: [📺 Video](https://youtu.be/bu5dhaLmr7E), [📝 Article](https://opensuperintelligencelab.com/learn/large-language-models/batch-size-vs-sequence-length/)
+- Balanced approach analysis for batch size and sequence length optimization
 
 ### [Exp4: AMP vs FP32 on T4](experiments/exp4_amp_fp32_t4/)
-- **Researcher**: Sumner Marston ([GitHub](https://github.com/Summykai))
-- **Research Question**: When should you use mixed precision (FP16) vs full precision (FP32) on an NVIDIA T4 GPU?
-- **Key Findings**: On a T4 GPU, mixed precision (AMP) is up to 2x faster than full precision (FP32) when processing over 600-1,000 tokens at once. Larger models benefit from AMP with fewer tokens, while smaller models require more tokens to see a speedup.
+- Mixed precision vs full precision performance comparison
 
 ### [Exp3: PLASA + GDN Hybrid](experiments/exp3_plasa_gdn_hybrid/)
-- **Researcher**: Overtimepog ([GitHub](https://github.com/overtimepog))
-- **Validated Tag**: `git checkout experiments-v1.0`
-- **Research Question**: 
-  1. Can per-layer adaptive sparse attention (PLASA) with progressive sparsity scheduling improve upon the uniform sparse attention tested in Exp1?
-  2. Does the PROGRESSIVE_SPARSE schedule align with transformer layer hierarchy (dense early layers, aggressive sparse middle layers, moderate sparse late layers)?
-  3. Which combination produces the best efficiency-performance tradeoff across 11 patterns (pure architectures + PLASA hybrids + Original hybrids)?
-- **Key Findings**: A full Per-Layer Adaptive Sparse Attention (PLASA) architecture is optimal. It significantly improves validation loss, accuracy, and training speed compared to hybrid models or full attention. The results also confirm that applying progressively sparser attention to the middle layers of a transformer is a highly effective strategy.
+- Per-layer adaptive sparse attention analysis
 
 ### [Exp1: DSA + GDN Hybrid](experiments/exp1_dsa_gdn_hybrid/)
-- **Researcher**: Vuk Rosić ([YouTube](https://www.youtube.com/channel/UC7XJj9pv_11a11FUxCMz15g), [GitHub](https://github.com/vukrosic))
-- **Validated Tag**: `git checkout experiments-v1.0`
-- **Research Question**: 
-  1. Can replacing full attention with DeepSeek Sparse Attention (DSA) improve the efficiency and performance of a hybrid attention architecture that combines full attention and Gated DeltaNet (GDN)?
-  2. Which combination of attention mechanisms across layers produces the best efficiency-performance tradeoff: (1) Full Attention + GDN, (2) DSA + GDN, (3) DSA only, or (4) Full Attention only?
-- **Key Findings**: Using DeepSeek Sparse Attention (DSA) in a hybrid model with Gated DeltaNet (GDN) provides faster initial training. However, full attention seems to achieve better performance over longer training runs. The optimal combination of attention mechanisms still requires more research.
-- **Tutorials**: [📺 Video](https://youtu.be/kAEPS_AUGy8), [📝 Article](https://opensuperintelligencelab.com/blog/deepseek-sparse-attention/)
+- DeepSeek Sparse Attention with Gated DeltaNet hybrid testing
 
-## Getting Started
+## Research Questions
 
-1. **Fork this repository** - Click the "Fork" button at the top right of this page to create your own copy
-2. Clone your fork: `git clone https://github.com/YOUR-USERNAME/blueberry-llm.git`
-3. Install dependencies: `pip install -r requirements.txt`
-4. Read `CONTRIBUTING.md` for contribution guidelines
-5. Create your own experiment and merge it
-6. Explore the `experiments/` folder for ongoing research and inspiration
-7. Once you finish with your research, create a pull request to merge it back to this repo
+1. How do Muon and Adam optimizers compare for training large language models?
+2. What are the optimal hyperparameter configurations for each optimizer?
+3. How does gradient orthogonalization affect training dynamics?
+4. What is the computational trade-off of Newton-Schulz iterations in Muon?
+5. Which optimizer provides better convergence and robustness for MoE transformers?
 
-## Philosophy
+## Citation
 
-We don't prescribe what to research. Instead, we provide:
-- Freedom to explore interesting ideas
-- Infrastructure to test hypotheses
-- A collaborative environment for learning
+If you use this work in your research, please cite:
 
-## Structure
+```bibtex
+@mastersthesis{rosic2025muon,
+  author = {Rosić, Vuk},
+  title = {Comparative Analysis of Muon and Adam Optimizers for Training Large Language Models},
+  school = {Óbuda University},
+  year = {2025}
+}
+```
 
-- **`experiments/`** - Research experiments with their own documentation
-- **`models/`** - Model architectures and implementations (DeepSeek, Qwen3-Next)
-- **`training/`** - Training scripts and utilities
-- **`configs/`** - Configuration files
+## Contact
 
-## Contributing
+**Vuk Rosić**
+- GitHub: [@vukrosic](https://github.com/vukrosic)
+- YouTube: [Vuk Rosić Channel](https://www.youtube.com/channel/UC7XJj9pv_11a11FUxCMz15g)
 
-See `CONTRIBUTING.md` for guidelines on how to contribute to this project.
+---
+
+*This research is part of my bachelor's thesis work on optimizer design for large language models.*
